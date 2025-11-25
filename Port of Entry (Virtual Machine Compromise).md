@@ -428,188 +428,204 @@ DeviceProcessEvents
 
 
 
-### ☁️ Flag 14 – Data Exfiltration Attempt
+### ☁️ Flag 14 – COLLECTION - Data Staging Archive
 
 **Objective:**
-Validate that outbound activity occurred, and determine which process was responsible for initiating the exfiltration.
+Attackers compress stolen data for efficient exfiltration. The archive filename often includes dates or descriptive names for the attacker's organisation.
 
 **What to Hunt:**
-Outbound network connections to cloud storage or paste services — particularly with valid InitiatingProcessMD5 values that point to suspicious or newly observed binaries.
+Search for ZIP file creation in the staging directory during the collection phase. Look for Compress-Archive commands or examine files created before exfiltration activity.
 
-**Confirmed Exfiltration Behavior:**
-
-MD5 Hash: 2e5a8590cf6848968fc23de3fa1e25f1
-
-**Remote URLs Accessed:**
-
-- drive.google.com
-
-- dropbox.com
-
-- www.dropbox.com
-
-- pastebin.com
-
-**Remote Session Origin:** MICHA3L
-
-**Device:** centralsrvr
-
-**Timestamps:**
-
-2025-06-17T22:23:24Z → Google Drive
-
-2025-06-17T22:23:28Z → Dropbox (2 entries)
-
-2025-06-17T22:23:31Z → Pastebin
+**Compressed archives for Data Exfiltration:**
 
 **Why It Matters:**
-The repeated outbound traffic to Google Drive, Dropbox, and Pastebin confirms that data was likely exfiltrated using trusted cloud services. The process responsible (based on the matching MD5) was consistently active across multiple destinations in rapid succession — indicating automation or scripted behavior.
 
-This type of behavior is common in attacks involving:
+**KQL Query Used:**
+```
+DeviceFileEvents
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+| where FileName contains ".zip"
+```
 
-- Command-and-control (C2) over legitimate platforms
+<img width="1096" height="161" alt="image" src="https://github.com/user-attachments/assets/79729a8a-c67f-4b52-89b3-68067296c30b" />
 
-- Data exfiltration masquerading as routine cloud traffic
 
-- Anti-detection via encrypted TLS channels
+### 🌐 Flag 15 – EXFILTRATION - Exfiltration Channel
+
+**Objective:**
+Cloud services with upload capabilities are frequently abused for data theft. Identifying the service helps with incident scope determination and potential data recovery.
+
+**What to Hunt:**
+Analyse outbound HTTPS connections and file upload operations during the exfiltration phase. Check DeviceNetworkEvents for connections to common file sharing or communication platforms.
+
+**Cloud Service:**
+discord
+Nov 20, 2025 2:09:21 AM
+
+**Why It Matters:**
+
 
 **KQL Query Used:**
 ```
 DeviceNetworkEvents
-| where DeviceName == "centralsrvr"
-| where Timestamp > datetime("2025-06-16")
-| where RemoteUrl != ""
-| where InitiatingProcessRemoteSessionDeviceName != ""
-| project Timestamp, DeviceName, RemoteUrl, InitiatingProcessMD5, InitiatingProcessRemoteSessionDeviceName
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
 ```
 
-<img width="1193" height="136" alt="f3440e1b-0787-4bbd-b0df-c9fa53fde588" src="https://github.com/user-attachments/assets/940171b9-78e2-448f-bf9c-e3a0d102d5da" />
+<img width="624" height="580" alt="image" src="https://github.com/user-attachments/assets/f56ec8bb-3736-4c01-aa1d-553952a05961" />
 
 
-### 🌐 Flag 15 – Destination of Exfiltration
+
+
+### 🧬 Flag 16 – ANTI-FORENSICS - Log Tampering
 
 **Objective:**
-Identify the final IP address used for outbound data exfiltration.
+Clearing event logs destroys forensic evidence and impedes investigation efforts. The order of log clearing can indicate attacker priorities and sophistication.
 
 **What to Hunt:**
-Connections to remote IPs associated with unauthorized or public cloud services (e.g., Pastebin, Dropbox, Google Drive), often abused to exfiltrate sensitive data.
+Search for event log clearing commands near the end of the attack timeline. Look for wevtutil.exe executions and identify which log was cleared first.
 
-**Confirmed Exfiltration Endpoint:**
-
-- Remote IP: 104.22.69.199
-
-- Resolved Domain: pastebin.com
-
-- Device: centralsrvr
-
-- Session Origin: MICHA3L
-
-- Timestamp: 2025-06-17T22:23:31Z
+**Cleared Windows Event Log:**
+Security
+Nov 20, 2025 2:11:39 AM
 
 **Why It Matters:**
-The IP 104.22.69.199 is associated with pastebin.com, a common data dump and exfiltration site abused by attackers due to its anonymity and accessibility. This connection marks the final confirmed outbound transmission, likely containing sensitive financial data previously accessed.
 
-This finding validates:
-
-- The attacker used Pastebin as an exfiltration destination.
-
-- The same process that initiated connections to Google Drive and Dropbox (see Flag 14) also ended the operation here.
-
-- Timeline correlation can help identify full data loss scope and inform incident containment and forensics review.
-
-**KQL Query Used (with IP projection):**
-```
-DeviceNetworkEvents
-| where DeviceName == "centralsrvr"
-| where Timestamp > datetime("2025-06-16")
-| where RemoteUrl != ""
-| where RemoteIP != ""
-| where InitiatingProcessRemoteSessionDeviceName != ""
-| project Timestamp, DeviceName, RemoteUrl, RemoteIP, InitiatingProcessMD5, InitiatingProcessRemoteSessionDeviceName
-```
-
-<img width="1193" height="136" alt="1c33beda-2d23-421c-8212-dd1b6f98aaf2" src="https://github.com/user-attachments/assets/83abad89-3ceb-4cfa-b560-d96b8584436c" />
-
-
-
-### 🧬 Flag 16 – PowerShell Downgrade Detection
-
-**Objective:**
-Detect the use of PowerShell version downgrade flags (-Version 2), often used to evade logging mechanisms like AMSI and Script Block Logging.
-
-**What to Hunt:**
-Command-line execution of powershell.exe with the -Version 2 parameter, which forces the session into legacy compatibility mode and bypasses modern security instrumentation.
-
-**Confirmed Downgrade Attempt:**
-
-- Timestamp: 2025-06-18T10:52:59.0847063Z
-
-- Device: centralsrvr
-
-- Command Line: powershell.exe -Version 2 -NoProfile -ExecutionPolicy Bypass -NoExit
-
-- Remote Session Origin: MICHA3L
-
-**Why It Matters:**
-PowerShell v2 lacks critical security features such as:
-
-- Script Block Logging
-
-- AMSI Integration
-
-- Module Logging
-
-This downgrade attempt is a clear evasion tactic, often used in advanced persistent threat (APT) operations and red team simulations. Its presence strongly suggests an effort to avoid detection during payload execution or lateral scripting.
 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName == "centralsrvr"
-| where ProcessCommandLine contains "-Version 2"
-| project Timestamp, DeviceName, ProcessCommandLine, ProcessRemoteSessionDeviceName
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "wev"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 ```
+<img width="1641" height="358" alt="image" src="https://github.com/user-attachments/assets/ed10b702-1075-4e29-8990-331d3b900ba8" />
 
-<img width="700" height="138" alt="53744d85-908b-4392-8d19-a888e73a762b" src="https://github.com/user-attachments/assets/161779b7-258d-49ab-9f29-4f7edb2ec349" />
+<img width="1677" height="330" alt="image" src="https://github.com/user-attachments/assets/182dccd6-c8af-47c5-b89a-318df8f1c4a4" />
 
 
-### 🧹 Flag 17 – Log Clearing Attempt
+
+### 🧹 Flag 17 – IMPACT - Persistence Account
 
 **Objective:**
-Detect if the attacker attempted to clear system logs to destroy forensic evidence and cover their tracks.
+Hidden administrator accounts provide alternative access for future operations. These accounts are often configured to avoid appearing in normal user interfaces.
 
 **What to Hunt:**
-Look for execution of: wevtutil cl Security
+Search for account creation commands executed during the impact phase. Look for commands with the /add parameter followed by administrator group additions.
 
-This command clears the Security Event Log, which contains crucial evidence such as logon events, privilege escalations, and policy changes.
-
-**Confirmed Log Wipe Action:**
-
-- Process: wevtutil.exe
-
-- Command Line: wevtutil.exe cl Security
-
-- Process Creation Timestamp: 2025-06-18T10:52:33.3030998Z
-
-- Device: centralsrvr
-
-- Remote Session Origin: MICHA3L
+**Hidden Username:**
+support
 
 **Why It Matters:**
-Clearing logs is an overt attempt to erase visibility into prior attacker activity. It’s often the last move before exfiltration or attacker exit, especially in hands-on-keyboard intrusions. This event signals a shift from persistence to cleanup and departure, and it must be treated as an urgent containment and recovery milestone.
+
 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName == "centralsrvr"
-| where ProcessCommandLine contains "cl Security"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime, ProcessRemoteSessionDeviceName
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "add"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 ```
-<img width="436" height="195" alt="703a42c4-90d7-4cde-a55b-afff1197e0c2" src="https://github.com/user-attachments/assets/5ef30f00-e5d1-4758-a0c7-1320f34454ca" />
+<img width="1678" height="135" alt="image" src="https://github.com/user-attachments/assets/656c2f22-51e3-44be-90d7-dee068d70c56" />
+
 
 
 
 ---
 
+### 🧹 Flag 18 – EXECUTION - Malicious Script
+
+**Objective:**
+Attackers often use scripting languages to automate their attack chain. Identifying the initial attack script reveals the entry point and automation method used in the compromise.
+
+**What to Hunt:**
+Search DeviceFileEvents for script files created in temporary directories during the initial compromise phase. Look for PowerShell or batch script files downloaded from external sources shortly after initial access.
+
+**Found PowerShell Script to Start Attack Chain:**
+Nov 20, 2025 1:37:40 AM
+wupdate.ps1
+**Why It Matters:**
+
+
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "add"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+<img width="1678" height="135" alt="image" src="https://github.com/user-attachments/assets/656c2f22-51e3-44be-90d7-dee068d70c56" />
+
+
+
+
+---
+
+### 🧹 Flag 19 – LATERAL MOVEMENT - Secondary Target
+
+**Objective:**
+Lateral movement targets are selected based on their access to sensitive data or network privileges. Identifying these targets reveals attacker objectives.
+
+**What to Hunt:**
+Examine the target system specified in remote access commands during lateral movement.Look for IP addresses used with cmdkey or mstsc commands near the end of the attack timeline.
+**IP Address Target:**
+10.1.0.188
+
+Nov 20, 2025 2:10:41 AM
+
+**Why It Matters:**
+
+
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "mstsc"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+<img width="1670" height="384" alt="image" src="https://github.com/user-attachments/assets/4381ab9d-2771-4b70-9a8f-e29989b3e882" />
+
+
+
+
+
+---
+
+### 🧹 Flag 20 – LATERAL MOVEMENT - Remote Access Tool
+
+**Objective:**
+Built-in remote access tools are preferred for lateral movement as they blend with legitimate administrative activity. This technique is harder to detect than custom tools.
+**What to Hunt:**
+Search for remote desktop connection utilities executed near the end of the attack timeline. Look for processes launched with remote system names or IP addresses as arguments.
+**Remote Access Tool:**
+mstsc.exe
+Nov 20, 2025 2:10:41 AM
+
+
+**Why It Matters:**
+
+
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "mstsc"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+<img width="1699" height="388" alt="image" src="https://github.com/user-attachments/assets/d0d87a69-2271-4ccb-b649-47e96ebb6bdb" />
+
+
+
+
+
+
+---
 ## 🔍 Timeline of Events
 
 | **Timestamp (UTC)**                | **Event**                                                         | **Device**  | **Details**                                                      |
