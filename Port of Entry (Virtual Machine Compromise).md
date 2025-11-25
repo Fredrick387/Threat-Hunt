@@ -303,6 +303,7 @@ Extract the task action from the scheduled task creation command line. Look for 
 
 **Identified Executable Path within Scheduled Task:**
 C:\ProgramData\WindowsCache\svchost.exe
+Nov 20, 2025 2:07:46 AM
 
 **Why It Matters:**
 
@@ -328,141 +329,102 @@ Command and control infrastructure allows attackers to remotely control compromi
 **What to Hunt:**
 Analyse network connections initiated by the suspicious executable shortly after it was downloaded. Use DeviceNetworkEvents to find outbound connections from the malicious process to external IP addresses.
 
-**Identified Scheduled Task:**
-
+**Identified Server IP:**
+78.141.196.6
+Nov 20, 2025 1:37:26 AM
 
 **Why It Matters:**
-The attacker created a scheduled task named MarketHarvestJob to persistently execute a malicious HTA file using powershell.exe. This task triggers on user logon, ensuring the payload re-executes even after reboots — a common persistence mechanism seen in fileless malware deployments.
-
-**Note:** The command uses multiple evasion techniques: -WindowStyle Hidden, -ExecutionPolicy Bypass, and placement in a trusted Temp directory to blend in and reduce detection risk.
 
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where Timestamp > datetime("2025-06-16T06:41:24.1068836Z")
-| where DeviceName == "michaelvm"
-| where FileName contains "schtask"
-| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
+DeviceNetworkEvents
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+
 ```
 
-<img width="1655" height="525" alt="e607b4d1-a060-40e5-a3ce-ec0a64c76e15" src="https://github.com/user-attachments/assets/a70760a0-4f63-4155-9cd0-2762cd92e1d4" />
+<img width="1703" height="101" alt="image" src="https://github.com/user-attachments/assets/5cd5847a-c4fb-4805-978c-697945ae0897" />
 
 
 
-### 🧭 Flag 11 – Target of Lateral Movement
+
+### 🧭 Flag 11 – COMMAND & CONTROL - C2 Communication Port
 
 **Objective:**
-Identify which remote machine the attacker pivoted to after compromising the initial host.
+C2 communication ports can indicate the framework or protocol used. This information supports network detection rules and threat intelligence correlation.
 
 **What to Hunt:**
-Search for remote command-line operations, especially those involving /S and /U flags (remote system and user) within tools like schtasks.exe or wmic.exe.
+Examine the destination port for outbound connections from the malicious executable. Check DeviceNetworkEvents for the RemotePort field associated with C2 traffic.
 
-**Identified Lateral Movement Target:**
-
-- Remote System: centralsrvr
-
-- Command Line: schtasks.exe /Create /S centralsrvr /U centralsrvr\\adminuser /P ********** /TN RemoteC2Task /TR "powershell.exe -ExecutionPolicy Bypass -File C:\\Users\\Public\\C2.ps1" /SC ONLOGON
-
-- Originating Host: michaelvm
-
-- Initiating Process: powershell.exe
-
-- Initiating Parent: RuntimeBroker.exe
-
-- Timestamp: 2025-06-16T08:32:34.9799062Z
+**Identified Destination Port:**
+443
 
 **Why It Matters:**
-The attacker attempted to remotely schedule a task on centralsrvr using valid admin credentials. This suggests either credential theft or insider access. The use of a PowerShell C2 script (C2.ps1) and placement in C:\Users\Public\ points to a stealthy, fileless command-and-control strategy. This marks initial lateral movement, indicating the breach is spreading.
+
 
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where Timestamp > datetime("2025-06-16T06:41:24.1068836Z")
-| where ProcessCommandLine has @"/U"
-| where ProcessCommandLine has @"/S"
-| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
+DeviceNetworkEvents
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
 ```
-<img width="1435" height="783" alt="1fe6deca-9bc1-4dd5-bd00-1823d7645b4f" src="https://github.com/user-attachments/assets/f7b74394-73f6-4bc8-901a-ec64b1338d88" />
+<img width="1672" height="391" alt="image" src="https://github.com/user-attachments/assets/b0ef8b80-d0df-406c-ab5b-0bc61d8560a8" />
 
 
-### ⏱️ Flag 12 – Lateral Move Timestamp
+
+### ⏱️ Flag 12 – CREDENTIAL ACCESS - Credential Theft Tool
 
 **Objective:**
-Pinpoint the exact time that lateral movement to the second host occurred.
+Credential dumping tools extract authentication secrets from system memory. These tools are typically renamed to avoid signature-based detection.
 
 **What to Hunt:**
-Review command-line executions targeting remote systems using /S and /U, especially via tools like schtasks.exe. Focus on the last known timestamp that initiated remote actions.
+Look for executables downloaded to the staging directory with very short filenames. Search for files created shortly before LSASS memory access events.
 
-**Identified Execution Time:**
-
-- Timestamp: 2025-06-17T03:00:49.525038Z
-
-- Remote System Targeted: centralsrvr
-
-- Originating Host: michaelvm
-
-- Process Used: schtasks.exe
-
+**Identified Executable:**
+mm.exe
+Nov 20, 2025 2:07:22 AM
 **Why It Matters:**
-This timestamp marks the last recorded instance of lateral activity from the compromised michaelvm system. It provides a critical anchor point for reconstructing the adversary's timeline, containment actions, and correlation with further compromise events on centralsrvr.
+
 
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where Timestamp > datetime("2025-06-16T06:41:24.1068836Z")
-| where ProcessCommandLine has @"/U"
-| where ProcessCommandLine has @"/S"
-| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessCommandLine, InitiatingProcessParentFileName
+DeviceFileEvents
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+| where FolderPath contains "cache"
 ```
-<img width="1418" height="231" alt="b5c1c5a2-4086-4bd7-acdd-aa32f48c6000" src="https://github.com/user-attachments/assets/89e63654-2a16-405b-b9e6-aa92af7cdd04" />
+<img width="1692" height="425" alt="image" src="https://github.com/user-attachments/assets/8a4cf6e5-233d-4a59-858a-76f01b04313c" />
 
 
-### 📂 Flag 13 – Sensitive File Access
+
+### 📂 Flag 13 – CREDENTIAL ACCESS - Memory Extraction Module
 
 **Objective:**
 Reveal which specific document the attacker targeted on the second host.
 
 **What to Hunt:**
-Search for access to high-value or confidential documents, particularly those that match known filenames or hashes from previous host compromises.
+Examine the command line arguments passed to the credential dumping tool. Look for module::command syntax in the process command line or output redirection.
 
-**Confirmed Sensitive File Accessed:**
+**Identified Permissions:**
 
-- Filename: QuarterlyCryptoHoldings.docx
+"mm.exe" privilege::debug sekurlsa::logonpasswords exit
 
-- SHA256 Hash: b4f3a56312dd19064ca89756d96c6e47ca94ce021e36f818224e221754129e98
-
-- Folder Path: C:\Users\centralsrvrID\Documents\BoardMinutes\QuarterlyCryptoHoldings.docx
-
-- Access Type: SensitiveFileRead
-
-- Timestamp: 2025-06-17T22:23:24Z
-
-- Target Host: centralsrvr
-
-- Remote Session Origin: MICHA3L
+Nov 20, 2025 2:08:26 AM
 
 **Why It Matters:**
-The attacker specifically sought the same financial document (QuarterlyCryptoHoldings.docx) that was previously accessed on michaelvm. This continuity strongly implies the adversary had a defined financial motive and confirms lateral access was not opportunistic — it was goal-oriented data theft.
+
 
 **KQL Queries Used:**
 ```
-DeviceEvents
-| where DeviceName == "centralsrvr"
-| where Timestamp > datetime("2025-06-16T06:41:24.1068836Z")
-| where FileName == "QuarterlyCryptoHoldings.docx"
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessRemoteSessionDeviceName
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where FileName contains "mm.exe"
+| project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 
-DeviceFileEvents
-| where DeviceName == "centralsrvr"
-| where Timestamp > datetime("2025-06-16T06:41:24.1068836Z")
-| where FileName == "QuarterlyCryptoHoldings.docx"
-| project Timestamp, DeviceName, FileName, FolderPath, SHA256, InitiatingProcessRemoteSessionDeviceName
 ```
-<img width="561" height="202" alt="a40dc9b7-1bd7-462b-9c88-a9f4e7d29a5e" src="https://github.com/user-attachments/assets/3ed4ade9-a9c2-4dac-a26d-ef0bdd17955b" />
+<img width="1713" height="163" alt="image" src="https://github.com/user-attachments/assets/36b8ab65-61e3-4963-956e-604ebc04d23f" />
 
-<img width="788" height="196" alt="f60c94a2-c756-4ba3-8704-27d3ff921ea1" src="https://github.com/user-attachments/assets/0930c33e-4992-4961-beeb-75ce06098167" />
 
 
 
