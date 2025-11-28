@@ -759,3 +759,134 @@ Through forensic analysis of process events, file reads, registry changes, and n
 - Set alerts for wevtutil cl activity
 
 - Forward logs to a secure, remote SIEM that is tamper-resistant
+
+
+
+
+### 🚩 Flag 1 – INITIAL ACCESS - Remote Access Source
+
+🎯 **Objective:**  
+Remote Desktop Protocol connections leave network traces that identify the source of unauthorized access. Determining the origin helps with threat actor attribution and blocking ongoing attacks.
+
+📌 **Finding:**  
+Source IP of RDP connection: `88.97.178.12`
+
+🔍 **Evidence:**
+
+| Field       | Value                        |
+|-------------|------------------------------|
+| Host        | azuki-sl                     |
+| Timestamp   | 2025-11-18 .. 2025-11-21    |
+| ActionType  | LogonSuccess                 |
+| AccountName | [varies]                     |
+| RemoteIP    | 88.97.178.12                 |
+| RemoteIPType| External                     |
+| DeviceName  | azuki-sl                     |
+
+💡 **Why it matters:**  
+This shows *how the attacker first entered the environment*. An external RDP login is a classic initial access vector. The attacker also executed PowerShell using `-ExecutionPolicy Bypass`, suggesting intentional evasion of safeguards.  
+MITRE ATT&CK: **TA0001 – Initial Access**, **T1078 – Valid Accounts**.
+
+🔧 **KQL Query Used**
+    DeviceLogonEvents
+    | where DeviceName == "azuki-sl"
+    | where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
+    | where RemoteIP contains "."
+    | where ActionType == "LogonSuccess"
+    | project Timestamp, ActionType, AccountName, RemoteIP, RemoteIPType, RemoteDeviceName
+    | order by Timestamp asc
+
+🖼️ Screenshot  
+Insert screenshot here
+
+🛠️ **Detection Recommendation**
+```
+    DeviceLogonEvents
+    | where ActionType == "LogonSuccess" and RemoteIPType == "External"
+    | summarize Count=count() by AccountName, RemoteIP, DeviceName
+    | where Count > 0
+```
+```md
+### 🚩 Flag 2 – INITIAL ACCESS - Compromised User Account
+
+🎯 **Objective:**  
+Identifying which credentials were compromised determines the scope of unauthorized access and guides remediation efforts, including password resets and privilege reviews.
+
+📌 **Finding:**  
+Compromised user account: `kenji.sato`
+
+🔍 **Evidence:**
+
+| Field       | Value                        |
+|-------------|------------------------------|
+| Host        | azuki-sl                     |
+| Timestamp   | 2025-11-18 .. 2025-11-21    |
+| ActionType  | LogonSuccess                 |
+| AccountName | kenji.sato                   |
+| RemoteIP    | [varies]                     |
+| DeviceName  | azuki-sl                     |
+
+💡 **Why it matters:**  
+Compromised credentials allow attackers to move laterally and access sensitive systems without triggering typical initial access alerts. Monitoring these accounts can prevent deeper compromise.  
+MITRE ATT&CK: **TA0001 – Initial Access**, **T1078 – Valid Accounts**.
+
+🔧 **KQL Query Used**
+    DeviceLogonEvents
+    | where DeviceName == "azuki-sl"
+    | where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
+    | where RemoteIP contains "."
+    | where ActionType == "LogonSuccess"
+    | project Timestamp, ActionType, AccountName, RemoteIP, RemoteIPType, RemoteDeviceName
+    | order by Timestamp asc
+
+🖼️ Screenshot  
+Insert screenshot here
+
+🛠️ **Detection Recommendation**
+```mdat
+    DeviceLogonEvents
+    | where ActionType == "LogonSuccess"
+    | summarize Count=count() by AccountName, DeviceName
+    | where Count > 3
+```
+```md
+### 🚩 Flag 3 – DISCOVERY - Network Reconnaissance
+
+🎯 **Objective:**  
+Detect commands that reveal local network devices and their hardware addresses, which indicate reconnaissance activity.
+
+📌 **Finding:**  
+Command executed: `"ARP.EXE" -a`
+
+🔍 **Evidence:**
+
+| Field                  | Value                       |
+|------------------------|-----------------------------|
+| Host                   | azuki-sl                    |
+| Timestamp              | 2025-11-19 .. 2025-11-21   |
+| DeviceName             | azuki-sl                    |
+| ProcessCommandLine      | "ARP.EXE" -a               |
+| FolderPath             | [varies]                    |
+| AccountName            | [varies]                    |
+| IsProcessRemoteSession | [true/false]                |
+
+💡 **Why it matters:**  
+ARP scans indicate the attacker is mapping internal networks, which is critical for planning lateral movement. Detecting these early prevents deeper penetration.  
+MITRE ATT&CK: **TA0007 – Discovery**, **T1046 – Network Service Scanning**.
+
+🔧 **KQL Query Used**
+    DeviceProcessEvents
+    | where DeviceName == "azuki-sl"
+    | where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
+    | project Timestamp, DeviceName, ProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
+
+🖼️ Screenshot  
+Insert screenshot here
+
+🛠️ **Detection Recommendation**
+```mdat
+    DeviceProcessEvents
+    | where ProcessCommandLine contains "ARP.EXE"
+    | summarize Count=count() by DeviceName, AccountName
+    | where Count > 1
+```
