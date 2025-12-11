@@ -74,9 +74,16 @@ DeviceLogonEvents
 **🖼️ Screenshot**
 <img width="1704" height="668" alt="image" src="https://github.com/user-attachments/assets/ec26dcb6-667d-4b6c-a444-e7159bc1c784" />
 
-**🛠️ Detection Recommendation**
+**🛠️ A.I. Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where TimeGenerated > ago(30d)                          // Adjust window as needed (e.g., last 30 days)
+| where isnotempty(RemoteIP)                              // Only remote logons with a real IP
+| where LogonType in ("RemoteInteractive", "Network")     // Focus on RDP and network logons (common for attackers)
+| where AccountName !contains "$"                         // Exclude machine accounts (optional – reduces noise)
+| summarize LogonCount = count(), FirstLogon = min(TimeGenerated), LastLogon = max(TimeGenerated) by DeviceName, AccountName, RemoteIP
+| where LogonCount >= 1                                    // Or raise threshold if needed
+| order by LastLogon desc
 ```
 
 <br>
