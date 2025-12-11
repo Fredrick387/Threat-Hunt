@@ -41,32 +41,38 @@ DeviceLogonEvents
 | ...  | ... | ... | ... |
 ---
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag 1: INITIAL ACCESS - Return Connection Source
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+After establishing initial access, sophisticated attackers often wait hours or days (dwell time) before continuing operations. They may rotate infrastructure between sessions to avoid detection.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+159.26.106.98
 
 **🔍 Evidence**
 
-| Field            | Value                                      |
-|------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Field            | Value                            |
+|------------------|----------------------------------|
+| Device Name      | azuki-sl                         |
+| Timestamp        | Nov 22, 2025 7:27:53 AM          |
+| Action Type      | LogonSuccess                     |
+
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The IP address discovered is the new source the attacker used when returning approximately 72 hours after the initial compromise.
+Sophisticated adversaries commonly rotate infrastructure between sessions to avoid linking new activity to the original breach and to evade detection based on known-bad IPs.
+Identifying this different return IP confirms the attacker has maintained access, exercised patience (dwell time), and is now escalating the intrusion (MITRE ATT&CK TA0001 – Initial Access sustained via T1078 – Valid Accounts).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where DeviceName contains "azuki" 
+| where Timestamp between (startofday(datetime(2025-11-22)) .. endofday(datetime(2025-11-24)))
+| where isnotempty(RemoteIP)
+| where ActionType contains "success"
+| project Timestamp, DeviceId, DeviceName, ActionType, InitiatingProcessRemoteSessionIP, RemoteIP
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1704" height="668" alt="image" src="https://github.com/user-attachments/assets/ec26dcb6-667d-4b6c-a444-e7159bc1c784" />
 
 **🛠️ Detection Recommendation**
 ```
