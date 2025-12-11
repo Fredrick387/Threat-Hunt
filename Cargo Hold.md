@@ -122,8 +122,11 @@ DeviceProcessEvents
 | project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine
 ```
 **🖼️ Screenshot**
-<img width="577" height="790" alt="image" src="https://github.com/user-attachments/assets/6f315126-7c0f-4824-81ad-4a4d062e8dd8" />
+
 <img width="1710" height="305" alt="image" src="https://github.com/user-attachments/assets/60033488-393f-4f7d-9964-cd614eade49b" />
+<br>
+<img width="577" height="790" alt="image" src="https://github.com/user-attachments/assets/6f315126-7c0f-4824-81ad-4a4d062e8dd8" />
+
 
 **🛠️ A.I. Detection Recommendation**
 ```
@@ -143,43 +146,63 @@ DeviceProcessEvents
 
 ### 🚩 Flag 3: LATERAL MOVEMENT - Compromised Account
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Identifying which credentials were compromised determines the scope of unauthorised access and guides remediation efforts.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+fileadmin
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | Nov 22, 2025 7:38:49 AM                    |
+| Action Type      | Logon Success                              |
+| Remote IP        | 10.1.0.204                                 |
+
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Finding the exact compromised account is essential because it shows the full scope of what the attacker can reach — in this case, sensitive files and shares that a file-server admin would normally access.
+Knowing the compromised account enables immediate containment (disable/reset the account) and guides the rest of the investigation and remediation (MITRE ATT&CK T1078 – Valid Accounts used for lateral movement and data access).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where RemoteDeviceName contains "azuki" 
+| where Timestamp between (startofday(datetime(2025-11-22)) .. endofday(datetime(2025-11-22)))
+| project Timestamp, DeviceId, DeviceName, ActionType, InitiatingProcessRemoteSessionIP, RemoteIP
 ```
 **🖼️ Screenshot**
 [Your screenshot here]
+<img width="1743" height="221" alt="image" src="https://github.com/user-attachments/assets/0ad57116-8296-4a9d-9c87-e749acd0d84d" />
+
+<br>
+
+<img width="642" height="166" alt="image" src="https://github.com/user-attachments/assets/4021b519-fabe-4754-b5d6-af94ada9120b" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where isnotempty(RemoteIP)                              // Only remote logons
+| where LogonType in ("RemoteInteractive", "Network")     // RDP or network logons (common for lateral movement)
+| where AccountName !contains "$"                         // Exclude machine accounts (optional noise reduction)
+| summarize LogonCount = count(), 
+            FirstSeen = min(TimeGenerated), 
+            LastSeen = max(TimeGenerated), 
+            Devices = make_set(DeviceName) by AccountName, RemoteIP
+| where LogonCount >= 2                                   // Find accounts with multiple logons from the same remote IP
+| order by LogonCount desc
 ```
 
 <br>
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag 4: DISCOVERY - Share Enumeration Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Network share enumeration reveals available data repositories and helps attackers identify targets for collection and exfiltration.
 
 **📌 Finding**  
 [Your finding/answer here, e.g., specific command or artifact.]
