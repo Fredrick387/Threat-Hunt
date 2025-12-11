@@ -205,40 +205,53 @@ DeviceLogonEvents
 Network share enumeration reveals available data repositories and helps attackers identify targets for collection and exfiltration.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"net.exe" share
 
 **🔍 Evidence**
 
-| Field            | Value                                      |
-|------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Field            | Value                                     |
+|------------------|-------------------------------------------|
+| Host             | azuki-fileserver01                        |
+| Timestamp        | Nov 22, 2025 7:40:54 AM                   |
+| Process          |      net.exe                              |
+| Parent Process   | powershell.exe                            |
+| Command Line     | `"net.exe" share   `                      |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The attacker ran a command to list all visible network shares from the compromised machine.
+This simple action instantly shows them which servers and workstations are sharing folders — and, more importantly, which ones their current stolen account can actually reach.
+Finding accessible shares is a critical step for attackers because those folders often contain the most valuable data (finance, HR, backups, databases) and become the primary targets for collection and exfiltration (MITRE ATT&CK T1135 – Network Share Discovery). Spotting this early tells us the attacker is actively mapping the network for high-value data locations.
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine contains "net"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1785" height="727" alt="image" src="https://github.com/user-attachments/assets/1c0c90ca-33bb-4034-81d2-4c21ab424e2c" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where FileName in ("net.exe", "powershell.exe", "cmd.exe")  // Common processes used for share discovery
+| where ProcessCommandLine has_any("net view", "net share", "Get-SmbShare", "win32_share", "wmic share")
+| extend Target = extract(@"\\\\([^\\]+)", 1, ProcessCommandLine)  // Extracts potential target hostname if present
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine, FileName, Target, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 <br>
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #5: DISCOVERY - Remote Share Enumeration
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Attackers enumerate remote network shares to identify accessible file servers and data repositories across the network.
 
 **📌 Finding**  
 [Your finding/answer here, e.g., specific command or artifact.]
