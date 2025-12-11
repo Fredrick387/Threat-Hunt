@@ -254,31 +254,45 @@ DeviceProcessEvents
 Attackers enumerate remote network shares to identify accessible file servers and data repositories across the network.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"net.exe" view \\10.1.0.188
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | Nov 22, 2025 7:42:01 AM                    |
+| Process          | net.exe                                    |
+| Parent Process   | powershell.exe                             |
+| Command Line     | `net.exe" view \\10.1.0.188`               |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The attacker ran a command to list network shares on a remote machine (not just the local one), revealing which folders and files on other servers they can actually access with their current stolen credentials.
+This step is crucial because it helps the attacker quickly locate high-value data repositories — such as file servers holding finance, HR, or customer files — that are often the ultimate target for exfiltration or encryption.
+Detecting remote share enumeration early signals that the attacker has moved beyond basic recon and is actively hunting for data across the network (MITRE ATT&CK T1135 – Network Share Discovery).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine contains "\\"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1665" height="597" alt="image" src="https://github.com/user-attachments/assets/929005b2-7623-404a-861c-f511c4537d9b" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where FileName in ("net.exe", "cmd.exe", "powershell.exe")
+| where ProcessCommandLine has_any("net view \\\\", "net use \\\\", "Get-SmbMapping", "Invoke-Command -ComputerName")
+| extend RemoteTarget = extract(@"\\\\([^\\ ]+)", 1, ProcessCommandLine)  // Extracts the remote hostname/server queried
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine, RemoteTarget, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 
