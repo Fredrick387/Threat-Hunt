@@ -91,36 +91,49 @@ DeviceLogonEvents
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag 2: LATERAL MOVEMENT - Compromised Device
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Lateral movement targets are selected based on their access to sensitive data or network privileges. File servers are high-value targets containing business-critical information.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+azuki-fileserver01
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-sl                          |
+| Timestamp        | Nov 22, 2025 7:38:47 AM              |
+| Process          | Microsoft Remote Desktop Connection                  |
+| Parent Process   | powershell.exe                    |
+| Command Line     | `"mstsc.exe" /V:10.1.0.188 `                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The command "mstsc.exe" /v:10.1.0.188 shows someone launching Remote Desktop to connect to the machine at IP 10.1.0.188.
+In a compromised environment, this is a clear sign the attacker is using stolen credentials to move laterally — jumping from the machine they already control to a new target inside the network via RDP.
+Finding this event reveals the attacker’s next target and confirms active hands-on-keyboard movement, a critical escalation step in most real-world breaches (MITRE ATT&CK T1021.001 – Remote Desktop Protocol).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki-sl"
+| where ProcessCommandLine contains "mstsc.exe"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="577" height="790" alt="image" src="https://github.com/user-attachments/assets/6f315126-7c0f-4824-81ad-4a4d062e8dd8" />
+<img width="1710" height="305" alt="image" src="https://github.com/user-attachments/assets/60033488-393f-4f7d-9964-cd614eade49b" />
 
-**🛠️ Detection Recommendation**
+**🛠️ A.I. Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where FileName == "mstsc.exe"                           // Focus on Remote Desktop client launches
+| where ProcessCommandLine contains "/v:"                // Look for the /v switch specifying a target
+| extend Target = extract(@"/v:([^ ]+)", 1, ProcessCommandLine)  // Extract the target IP/hostname
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine, Target, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 
@@ -128,7 +141,7 @@ DeviceLogonEvents
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag 3: LATERAL MOVEMENT - Compromised Account
 **🎯 Objective**  
 [Describe the objective of this flag in 1-2 sentences.]
 
