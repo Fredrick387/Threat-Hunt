@@ -1,6 +1,9 @@
 Markdown# New Threat Hunt Report - Cargo Hold
 *Lab Environment: [e.g., Cyber Range VM] | Date: [Current Date] | Tools: [e.g., KQL in Log Analytics]*
 
+<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/e3f3299b-68f1-4402-a994-2856a61803cc" />
+
+
 # 🚩 INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社
 
 **📋 INCIDENT BRIEF**
