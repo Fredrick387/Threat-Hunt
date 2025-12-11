@@ -1,6 +1,25 @@
 Markdown# New Threat Hunt Report - Cargo Hold
 *Lab Environment: [e.g., Cyber Range VM] | Date: [Current Date] | Tools: [e.g., KQL in Log Analytics]*
 
+# 🚩 INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社
+
+**📋 INCIDENT BRIEF**
+
+**SITUATION**  
+After establishing initial access on **November 19th**, network monitoring detected the attacker returning approximately **72 hours later**. Suspicious lateral movement and large data transfers were observed overnight on the file server.
+
+**COMPROMISED SYSTEMS**  
+[REDACTED - Investigation Required]
+
+**EVIDENCE AVAILABLE**  
+Microsoft Defender for Endpoint logs
+
+**Query Starting Point**
+```kql
+DeviceLogonEvents
+| where DeviceName contains "azuki"
+```
+
 ## Hunt Overview
 [Brief description of the scenario, objective, and key findings. Keep it 2-3 sentences for quick read.]
 
