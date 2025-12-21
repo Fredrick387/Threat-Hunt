@@ -1,3 +1,48 @@
+Markdown# New Threat Hunt Report - Cargo Hold
+*Lab Environment: [e.g., Cyber Range VM] | Date: [Current Date] | Tools: [e.g., KQL in Log Analytics]*
+
+<img width="740" height="1110" alt="image" src="https://github.com/user-attachments/assets/00b0fdb0-0f68-4b68-bb47-c01e537193ca" />
+
+
+
+# 🚩 INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社
+
+**📋 INCIDENT BRIEF**
+
+**SITUATION**  
+Five days after the file server breach, threat actors returned with sophisticated tools and techniques. The attacker pivoted from the compromised workstation to the CEO's administrative PC, deploying persistent backdoors and exfiltrating sensitive business data including financial records and password databases.
+
+**COMPROMISED SYSTEMS**  
+[REDACTED - Investigation Required]
+
+**EVIDENCE AVAILABLE**  
+Microsoft Defender for Endpoint logs
+
+**Query Starting Point**
+Starting Point: Nov-24
+
+```kql
+DeviceLogonEvents
+| where DeviceName contains "azuki"
+```
+
+## Hunt Overview
+[Brief description of the scenario, objective, and key findings. Keep it 2-3 sentences for quick read.]
+
+| Flag | Technique | MITRE ID | Priority |
+|------|-----------|----------|----------|
+| 1    | [Technique] | [ID] | Critical |
+| 2    | [Technique] | [ID] | High |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+| ...  | ... | ... | ... |
+---
 
 
 
