@@ -48,36 +48,51 @@ DeviceLogonEvents
 
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #1: LATERAL MOVEMENT - Source System
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Attackers pivot from initially compromised systems to high-value targets. Identifying the source of lateral movement reveals the attack's progression and helps scope the full compromise.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+10.1.0.204
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-adminpc                              |
+| Timestamp        | Nov 25, 2025 1:09:18 PM                    |
+| Process          | svchost.exe                                |
+| Parent Process   | services.exe                               |
+| Command Line     | 'svchost.exe -k netsvcs -p`                |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The IP 10.1.0.204 corresponds to the source system (azuki-adminpc) from which the attacker initiated lateral movement toward higher-value targets.
+Identifying the exact pivot point is essential because it shows how the attacker is progressing through the network — moving from the initial beachhead to systems with greater access or data.
+This allows defenders to fully scope the compromise, trace all activity originating from that machine, and prioritize containment (e.g., isolating azuki-adminpc).
+In real incidents, spotting the lateral movement source early is a high-signal indicator of active escalation and helps prevent deeper damage (MITRE ATT&CK T1021 – Remote Services used for lateral movement).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where Timestamp between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
+| where DeviceName contains "azuki"
+| where LogonType contains "remote"
+| order by Timestamp desc
+
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1717" height="661" alt="image" src="https://github.com/user-attachments/assets/3655d3a4-3179-48a4-b251-546beead9dfb" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceNetworkEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where isnotempty(RemoteIP)                              // Only connections with a remote IP
+| where LocalIP has "10." or LocalIP has "192.168." or LocalIP has "172."  // Focus on internal/private IP ranges
+| summarize ConnectionCount = count(), Targets = make_set(RemoteIP) by LocalIP, DeviceName
+| where ConnectionCount > 5                                // Threshold for unusual outbound connectivity (adjust based on baseline)
+| order by ConnectionCount desc
 ```
 
 
