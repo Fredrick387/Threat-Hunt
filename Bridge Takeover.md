@@ -133,7 +133,8 @@ DeviceLogonEvents
 | where LogonType contains "remote"
 | order by Timestamp desc
 ```
-**🖼️ Screenshot**
+**🖼️ Screenshot**<br>
+<br>
 <img width="498" height="810" alt="image" src="https://github.com/user-attachments/assets/3d0c7a2a-de6b-452a-a0f1-00b1c5b7f781" />
 
 
