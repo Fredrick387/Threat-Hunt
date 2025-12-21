@@ -102,36 +102,54 @@ DeviceNetworkEvents
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #2: LATERAL MOVEMENT - Compromised Credentials
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Understanding which accounts attackers use for lateral movement determines the blast radius and guides credential reset priorities.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+yuki.tanaka
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-adminpc                              |
+| Timestamp        | Nov 25, 2025 1:09:18 PM                    |
+| Process          | svchost.exe                                |
+| Parent Process   | services.exe                               |
+| Command Line     | 'svchost.exe -k netsvcs -p`                |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The account yuki.tanaka is the credential the attacker reused to perform lateral movement from the initially compromised system.
+Identifying the exact compromised account is vital because it defines the "blast radius" — everything that account can access across the network, including sensitive servers and data.
+This knowledge allows defenders to prioritize credential resets, disable the account if needed, and review all its activity to map the full extent of the breach.
+In real incidents, attackers frequently reuse stolen valid accounts for lateral movement because they blend in with normal activity and bypass many defenses (MITRE ATT&CK T1078 – Valid Accounts).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where Timestamp between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
+| where DeviceName contains "azuki"
+| where LogonType contains "remote"
+| order by Timestamp desc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="498" height="810" alt="image" src="https://github.com/user-attachments/assets/3d0c7a2a-de6b-452a-a0f1-00b1c5b7f781" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceLogonEvents
+| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where LogonType == "RemoteInteractive"                  // RDP logons – common for lateral movement
+| where isnotempty(RemoteIP)                              // Only remote logons
+| where AccountName !contains "$"                         // Exclude machine accounts
+| summarize LogonCount = count(), 
+            Devices = make_set(DeviceName), 
+            SourceIPs = make_set(RemoteIP) 
+            by AccountName
+| where array_length(Devices) > 1                         // Account logged into multiple devices (potential lateral movement)
+| order by LogonCount desc
 ```
 
 
