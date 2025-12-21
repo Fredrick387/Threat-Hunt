@@ -87,7 +87,7 @@ DeviceLogonEvents
 **🛠️ Detection Recommendation**
 ```
 DeviceNetworkEvents
-| where TimeGenerated > ago(30d)                          // Adjust time window as needed
+| where TimeStamp> ago(30d)                          // Adjust time window as needed
 | where isnotempty(RemoteIP)                              // Only connections with a remote IP
 | where LocalIP has "10." or LocalIP has "192.168." or LocalIP has "172."  // Focus on internal/private IP ranges
 | summarize ConnectionCount = count(), Targets = make_set(RemoteIP) by LocalIP, DeviceName
@@ -141,16 +141,19 @@ DeviceLogonEvents
 **🛠️ Detection Recommendation**
 ```
 DeviceLogonEvents
-| where TimeGenerated > ago(30d)                          // Adjust time window as needed
-| where LogonType == "RemoteInteractive"                  // RDP logons – common for lateral movement
-| where isnotempty(RemoteIP)                              // Only remote logons
+| where Timestamp > ago(30d)                              // Use Timestamp for DeviceLogonEvents
+| where LogonType in ("RemoteInteractive", "Network")     // Common for lateral movement
+| where isnotempty(RemoteIP)
 | where AccountName !contains "$"                         // Exclude machine accounts
+| extend IsInternalIP = RemoteIP startswith "10." or RemoteIP startswith "192.168." or (RemoteIP startswith "172." and toint(split(RemoteIP, ".")[1]) >= 16 and toint(split(RemoteIP, ".")[1]) <= 31)
 | summarize LogonCount = count(), 
             Devices = make_set(DeviceName), 
-            SourceIPs = make_set(RemoteIP) 
+            SourceIPs = make_set(RemoteIP),
+            InternalLogons = countif(IsInternalIP == true)
             by AccountName
-| where array_length(Devices) > 1                         // Account logged into multiple devices (potential lateral movement)
-| order by LogonCount desc
+| extend DeviceCount = array_length(Devices)
+| project AccountName, LogonCount, DeviceCount, InternalLogons, Devices, SourceIPs
+| order by InternalLogons desc, DeviceCount desc, LogonCount desc
 ```
 
 
