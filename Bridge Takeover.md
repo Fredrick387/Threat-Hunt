@@ -336,14 +336,17 @@ Password-protected archives evade basic content inspection while legitimate comp
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-adminpc                        |
+| Timestamp        | Nov 25, 2025 11:21:32 AM               |
+| Process          | 7z.exe                    |
+| Parent Process   | Nameexplorer.exe                    |
+| Command Line     | "7z.exe" x C:\Windows\Temp\cache\KB5044273-x64.7z -p******** -oC:\Windows\Temp\cache\ -y                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+The attacker used a command-line archive extraction tool to unpack the password-protected malicious archive downloaded in the previous flag.
+Password-protected archives are a common way to bypass antivirus scans and EDR content inspection, since the payload is hidden until extracted.
+Using built-in or legitimate compression tools (like 7-Zip or tar) also helps the attacker blend in, as these are often whitelisted and look like normal admin activity.
+Detecting this extraction command is a high-signal indicator that the malware has now been unpacked and is ready to run on the system (MITRE ATT&CK T1140 – Deobfuscate/Decode Files or Information combined with T1105 – Ingress Tool Transfer).
 
 **🔧 KQL Query Used**
 ```
@@ -360,7 +363,13 @@ DeviceProcessEvents
 
 **🛠️ Detection Recommendation**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp > ago(30d)                              // Adjust time window as needed
+| where FileName in ("7z.exe", "7za.exe", "tar.exe", "winrar.exe", "rar.exe", "unzip.exe", "expand.exe", "powershell.exe")
+| where ProcessCommandLine has_any(" -p", "-P", " -password", "extract", " x ", " e ", " -o", "Expand-Archive")
+| where ProcessCommandLine has_any(".zip", ".7z", ".rar", ".tar", ".gz")
+| project Timestamp, DeviceName, ProcessCommandLine, FileName, AccountName, FolderPath
+| order by Timestamp desc
 ```
 
 
