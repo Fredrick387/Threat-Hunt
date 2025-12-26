@@ -11,7 +11,7 @@ Analyst: Fredrick Wilson
 Date Completed: 11/25/2025
 
 Environment Investigated: 
-AZUKI-SL (IT admin workstation)
+Azure Logs via Microsoft Defender
 Timeframe: 11/20/2025
 
 ## 🧠 Scenario Overview
@@ -52,10 +52,12 @@ All events occurred on host **azuki-sl** on **November 20, 2025** (timestamps ap
 - One of my first threat hunts, and I didn't record the timestamps correctly.
 
 ### Starting Point – 
-
+DeviceProcessEvents
+| where DeviceName == "azuki-sl"
+| where Timestamp between (datetime(2025-11-19) .. datetime(2025-11-20))
 
 **Identified System:**
-michaelvm
+azuki-sl 
 
 
 ### 🪪 Flag 1 – INITIAL ACCESS - Remote Access Source
