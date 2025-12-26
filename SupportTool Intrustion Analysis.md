@@ -28,7 +28,6 @@ Your mission this time is to reconstruct the timeline, connect the scattered rem
 
 The evidence is here. The question is whether you’ll see through the story or believe it.
 
-## Timeline
 
 ## Chronological Timeline
 
