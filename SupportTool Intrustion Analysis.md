@@ -26,24 +26,25 @@ The evidence is here. The question is whether you’ll see through the story or 
 
 ## Timeline
 
-| **Time (UTC)**           | **Flag** | **Action Observed**                          | **Key Evidence**                                        |
-| ------------------------ | -------- | -------------------------------------------- | ------------------------------------------------------- |
-| **2025-10-09T13:13:12Z** | Flag 1   | Malicious file created (`Supporttool.ps1`)   | File dropped via PowerShell                             |
-| **2025-10-09T12:34:59Z** | Flag 2   | Initial execution of staging script          | PowerShell running HR script                            |
-| **2025-10-09T12:50:39Z** | Flag 3   | User token impersonation attempt             | Suspicious use of `runas`                               |
-| **2025-07-18T04:19:53Z** | Flag 4   | Reconnaissance of accounts & groups          | `net user /domain`                                      |
-| **2025-07-18T05:05:10Z** | Flag 5   | Privilege escalation via service abuse       | `sc.exe config`                                         |
-| **2025-07-18T05:27:32Z** | Flag 6   | Credential dumping from `lsass.exe`          | 92 access attempts                                      |
-| **2025-07-18T07:45:16Z** | Flag 7   | Local file staging                           | Promotion-related files                                 |
-| **2025-07-18T09:22:55Z** | Flag 8   | Archive creation (`employee-data.zip`)       | HR data compressed                                      |
-| **2025-07-18T14:12:40Z** | Flag 9   | Outbound ping to unusual domain              | `eo7j1sn715wk...pipedream.net`                          |
-| **2025-07-18T15:28:44Z** | Flag 10  | Covert exfil attempt                         | Remote IP `52.54.13.125`                                |
-| **2025-07-18T15:50:36Z** | Flag 11  | Persistence via registry run key             | `OnboardTracker.ps1`                                    |
-| **2025-07-18T16:05:21Z** | Flag 12  | Personnel file repeatedly accessed           | `Carlos.Tanaka-Evaluation.lnk`                          |
-| **2025-07-18T16:14:36Z** | Flag 13  | HR candidate list tampered                   | Modified `PromotionCandidates.csv` (SHA1: `65a5195...`) |
-| **2025-07-18T17:38:55Z** | Flag 14  | Log clearing via `wevtutil`                  | Cleared Security, System, App logs                      |
-| **2025-07-18T18:18:38Z** | Flag 15  | Anti-forensics exit prep                     | Dropped `EmptySysmonConfig.xml`                         |
+## Chronological Timeline
 
+| **Time (UTC)**            | **Flag**  | **Action Observed**                                      | **Key Evidence**                                                                 |
+|---------------------------|-----------|----------------------------------------------------------|----------------------------------------------------------------------------------|
+| 2025-10-09 12:34:59       | Flag 2    | Defense Disabling                                        | DefenderTamperArtifact.lnk created by Explorer.EXE                               |
+| 2025-10-09 12:50:39       | Flag 3    | Quick Data Probe                                         | powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard \| Out-Null } catch { }" |
+| 2025-10-09 12:51:18       | Flag 5    | Storage Surface Mapping                                  | cmd.exe /c wmic logicaldisk get name,freespace,size                               |
+| 2025-10-09 12:51:44       | Flag 4    | Host Context Recon                                       | powershell.exe executing qwinsta (query session)                                 |
+| 2025-10-09 12:51:57       | Flag 8    | Runtime Application Inventory                            | cmd.exe /c tasklist /v                                                           |
+| 2025-10-09 12:52:14       | Flag 7    | Interactive Session Discovery / Privilege Surface Check  | cmd.exe /c whoami /groups                                                        |
+| 2025-10-09 12:52:14       | Flag 9    | Privilege Surface Check                                  | cmd.exe /c whoami /groups                                                        |
+| 2025-10-09 12:55:05       | Flag 6    | Connectivity & Name Resolution Check                     | Network event initiated by powershell.exe via RuntimeBroker.exe                   |
+| 2025-10-09 12:55:05       | Flag 10   | Proof-of-Access & Egress Validation                      | Network connection to www.msftconnecttest.com by powershell.exe                  |
+| 2025-10-09 12:58:17       | Flag 11   | Bundling / Staging Artifacts                             | ReconArtifacts.zip created by powershell.exe                                      |
+| 2025-10-09 13:00:40       | Flag 12   | Outbound Transfer Attempt (Simulated)                    | powershell.exe network connection to 100.29.147.161                              |
+| 2025-10-09 13:01:28       | Flag 13   | Scheduled Re-Execution Persistence                       | schtasks.exe /Create /SC ONLOGON /TN SupportToolUpdater /TR "powershell.exe ... SupportTool.ps1" |
+| 2025-10-09 13:02:41       | Flag 15   | Planted Narrative / Cover Artifact                       | SupportChat_log.lnk and SupportChat_log.txt created/edited via NOTEPAD.EXE       |
+| 2025-10-09 13:13:12       | Flag 1    | Initial Execution Detection                              | powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1" |
+|                           | Flag 14   | Autorun Fallback Persistence                             |                                                                                  |
 ---
 ### Starting Point – Identifying the Initial System
 
