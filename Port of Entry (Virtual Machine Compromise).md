@@ -18,65 +18,42 @@ Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier con
 
 ---
 
-## 🎯 Executive Summary
 
+## Chronological Timeline of Compromise
 
+All events occurred on host **azuki-sl** on **November 20, 2025** (timestamps approximate in UTC/local as shown in logs; primary activity between ~01:37 AM and ~02:11 AM).
 
+| **Time (approx.)**       | **Flag** | **Action Observed**                          | **Key Evidence**                                                                 |
+|--------------------------|----------|----------------------------------------------|----------------------------------------------------------------------------------|
+| 2025-11-20 01:37 AM      | Flag 18  | Execution - Malicious Script                 | PowerShell script wupdate.ps1 executed to initiate attack chain                  |
+| 2025-11-20 01:37 AM      | Flag 10  | Command & Control - Initial Beacon           | Outbound connection from malicious process (svchost.exe) to C2 IP 78.141.196.6 on port 443 |
+| 2025-11-20 ~02:05 AM     | Flag 4   | Defense Evasion - Malware Staging Directory  | Creation of hidden directory C:\ProgramData\WindowsCache                         |
+| 2025-11-20 02:06 AM      | Flag 7   | Defense Evasion - Download Utility Abuse     | certutil.exe used to download malicious payload                                  |
+| 2025-11-20 02:07 AM      | Flag 12  | Credential Access - Credential Theft Tool    | Download and staging of renamed Mimikatz executable mm.exe                       |
+| 2025-11-20 02:07 AM      | Flag 8   | Persistence - Scheduled Task Creation        | Scheduled task "Windows Update Check" created                                    |
+| 2025-11-20 02:07 AM      | Flag 9   | Persistence - Scheduled Task Target          | Task configured to execute C:\ProgramData\WindowsCache\svchost.exe               |
+| 2025-11-20 02:08 AM      | Flag 13  | Credential Access - Memory Extraction        | mm.exe executed with "privilege::debug sekurlsa::logonpasswords exit"            |
+| 2025-11-20 ~02:08 AM     | Flag 14  | Collection - Data Staging Archive            | Creation of export-data.zip (and other .zip files like VMAgentLogs.zip) in staging directory |
+| 2025-11-20 02:09 AM      | Flag 15  | Exfiltration - Exfiltration Channel          | curl.exe used to upload export-data.zip via HTTPS to Discord                     |
+| 2025-11-20 02:10 AM      | Flag 19  | Lateral Movement - Secondary Target          | RDP connection attempted to internal IP 10.1.0.188                               |
+| 2025-11-20 02:10 AM      | Flag 20  | Lateral Movement - Remote Access Tool        | mstsc.exe launched for remote desktop to 10.1.0.188                              |
+| 2025-11-20 02:11 AM      | Flag 16  | Anti-Forensics - Log Tampering               | wevtutil.exe used to clear Security log (and possibly others)                    |
+| 2025-11-20 (post-activity)| Flag 17 | Impact - Persistence Account                 | Hidden local administrator account "support" created and added to Administrators group |
+| 2025-11-18 to 2025-11-21 | Flag 1   | Initial Access - Remote Access Source        | RDP connection from external IP 88.97.178.12                                     |
+| 2025-11-18 to 2025-11-21 | Flag 2   | Initial Access - Compromised User Account    | Successful logon using account kenji.sato                                        |
+| 2025-11-19 to 2025-11-21 | Flag 3   | Discovery - Network Reconnaissance           | arp -a executed to enumerate local network                                       |
+| 2025-11-19 to 2025-11-21 | Flag 5   | Defense Evasion - File Extension Exclusions  | 3 file extensions added to Windows Defender exclusions                           |
+| 2025-11-19 to 2025-11-21 | Flag 6   | Defense Evasion - Temporary Folder Exclusion | Exclusion added for Temp folder                                                  |
+| 2025-11-19 to 2025-11-21 | Flag 11  | Command & Control - C2 Communication Port     | Persistent C2 traffic over port 443                                              |
 
----
-
-## ✅ Completed Flags
-
-| Flag # | Objective | Value |
-|--------|-----------|-------|
-| **Start** | 
-| **1** | 
-| **2** | 
-| **3** | 
-| **4** | 
-| **5** | 
-| **6** | 
-| **7** | 
-| **8** | 
-| **9** | 
-| **10** | 
-| **11** | 
-| **12** | 
-| **13** | 
-| **14** | 
-| **15** | 
-| **16** | |
-| **17** | 
-
----
-## Flag by Flag
+**Notes:**
+- One of my first threat hunts, and I didn't record the timestamps correctly.
 
 ### Starting Point – 
-
-**Objective:**
-
-
-**Intel Given:**
 
 
 **Identified System:**
 michaelvm
-
-**Reasoning:**
-
-
-- First seen: 
-
-- Last seen: 
-
-
-
-**KQL Query Used:**
-```
-DeviceProcessEvents
-
-```
-
 
 
 ### 🪪 Flag 1 – INITIAL ACCESS - Remote Access Source
