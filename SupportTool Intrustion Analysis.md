@@ -44,7 +44,7 @@ The evidence is here. The question is whether you’ll see through the story or 
 | 2025-10-09 13:01:28       | Flag 13   | Scheduled Re-Execution Persistence                       | schtasks.exe /Create /SC ONLOGON /TN SupportToolUpdater /TR "powershell.exe ... SupportTool.ps1" |
 | 2025-10-09 13:02:41       | Flag 15   | Planted Narrative / Cover Artifact                       | SupportChat_log.lnk and SupportChat_log.txt created/edited via NOTEPAD.EXE       |
 | 2025-10-09 13:13:12       | Flag 1    | Initial Execution Detection                              | powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1" |
-|                           | Flag 14   | Autorun Fallback Persistence                             |                                                                                  |
+| N/A                       | Flag 14   | Autorun Fallback Persistence                             | N/A                                                                                 |
 ---
 ### Starting Point – Identifying the Initial System
 
