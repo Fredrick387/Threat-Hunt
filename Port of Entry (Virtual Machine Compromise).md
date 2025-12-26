@@ -1,22 +1,23 @@
 <img width="740" height="1110" alt="image" src="https://github.com/user-attachments/assets/09b44f4a-1670-4804-8009-5287751e7e8d" />
 
-# Threat Hunting Port of Entry(Jade Spider APT)
-INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社 
-SITUATION: Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier contracts and pricing data appeared on underground forums.
-COMPANY: Azuki Import/Export Trading Co. - 23 employees, shipping logistics Japan/SE Asia  
-EVIDENCE AVAILABLE: Microsoft Defender for Endpoint logs
-
-
 # 🕵️‍♀️ Threat Hunt Report: **Port of Entry**
-
+INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社 
+<br>
+SITUATION: Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier contracts and pricing data appeared on underground forums.
+<br>
+COMPANY: Azuki Import/Export Trading Co. - 23 employees, shipping logistics Japan/SE Asia
+<br>
+EVIDENCE AVAILABLE: Microsoft Defender for Endpoint logs
+<br>
 Analyst: Fredrick Wilson
-
+<br>
 Date Completed: 11/25/2025
-
+<br>
 Environment Investigated: 
 Azure Logs via Microsoft Defender
+<br>
 Timeframe: 11/20/2025
-
+<br>
 ## 🧠 Scenario Overview
 
 Competitor undercut our 6-year shipping contract by exactly 3%. Our supplier contracts and pricing data appeared on underground forums.
