@@ -403,32 +403,49 @@ DeviceFileEvents
 
 
 
-0 ➝ 1 🚩: An unfamiliar script surfaced in the user’s Downloads directory. Was this SupportTool.ps1 executed under the guise of IT diagnostics?
+### Intrusion Narrative Chain
 
-1 ➝ 2 🚩: Initial execution often precedes an attempt to weaken defenses. Did the operator attempt to tamper with security tools to reduce visibility?
+0 ➝ 1 🚩: An unfamiliar script surfaced in the user’s Downloads directory. **Was this SupportTool.ps1 executed under the guise of IT diagnostics?**  
+*(Yes – direct execution of the malicious PowerShell script observed.)*
 
-2 ➝ 3 🚩: With protections probed, the next step is quick data checks. Did they sample clipboard contents to see if sensitive material was immediately available?
+1 ➝ 2 🚩: Initial execution often precedes an attempt to weaken defenses. **Did the operator attempt to tamper with security tools to reduce visibility?**  
+*(Yes – creation of DefenderTamperArtifact.lnk to potentially disable or mislead Microsoft Defender.)*
 
-3 ➝ 4 🚩: Attackers rarely stop with clipboard data. Did they expand into broader environmental reconnaissance to understand the host and user context?
+2 ➝ 3 🚩: With protections probed, the next step is quick data checks. **Did they sample clipboard contents to see if sensitive material was immediately available?**  
+*(Yes – PowerShell command executed to capture clipboard data.)*
 
-4 ➝ 5 🚩: Recon of the system itself is followed by scoping available storage. Did the attacker enumerate drives and shares to see where data might live?
+3 ➝ 4 🚩: Attackers rarely stop with clipboard data. Did they expand into broader environmental reconnaissance to understand the host and user context?  
+*(Yes – qwinsta.exe used to query active sessions and user context.)*
 
-5 ➝ 6 🚩: After scoping storage, connectivity is key. Did they query network posture or DNS resolution to validate outbound capability?
+4 ➝ 5 🚩: Recon of the system itself is followed by scoping available storage. **Did the attacker enumerate drives and shares to see where data might live?**  
+*(Yes – WMIC command executed to list logical disks, sizes, and free space.)*
 
-6 ➝ 7 🚩: Once network posture is confirmed, live session data becomes valuable. Did they check active users or sessions that could be hijacked or monitored?
+5 ➝ 6 🚩: After scoping storage, connectivity is key. **Did they query network posture or DNS resolution to validate outbound capability?**  
+*(Yes – outbound network connectivity check performed via RuntimeBroker.)*
 
-7 ➝ 8 🚩: Session checks alone aren’t enough — attackers want a full picture of the runtime. Did they enumerate processes to understand active applications and defenses?
+6 ➝ 7 🚩: Once network posture is confirmed, live session data becomes valuable. Did they check active users or sessions that could be hijacked or monitored?  
+*(Partially covered in earlier recon; combined with subsequent checks.)*
 
-8 ➝ 9 🚩: Process context often leads to privilege mapping. Did the operator query group memberships and privileges to understand access boundaries?
+7 ➝ 8 🚩: Session checks alone aren’t enough — attackers want a full picture of the runtime. **Did they enumerate processes to understand active applications and defenses?**  
+*(Yes – tasklist /v executed to inventory running processes.)*
 
-9 ➝ 10 🚩: With host and identity context in hand, attackers often validate egress and capture evidence. Was there an outbound connectivity check coupled with a screenshot of the user’s desktop?
+8 ➝ 9 🚩: Process context often leads to privilege mapping. **Did the operator query group memberships and privileges to understand access boundaries?**  
+*(Yes – whoami /groups executed to enumerate user privileges and group memberships.)*
 
-10 ➝ 11 🚩: After recon and evidence collection, staging comes next. Did the operator bundle key artifacts into a compressed archive for easy movement?
+9 ➝ 10 🚩: With host and identity context in hand, attackers often validate egress and capture evidence. **Was there an outbound connectivity check coupled with a screenshot of the user’s desktop?**  
+*(Yes – connectivity validated to www.msftconnecttest.com; no explicit screenshot found, but recon artifacts collected.)*
 
-11 ➝ 12 🚩: Staging rarely stops locally — exfiltration is tested soon after. Were outbound HTTP requests attempted to simulate upload of the bundle?
+10 ➝ 11 🚩: After recon and evidence collection, staging comes next. **Did the operator bundle key artifacts into a compressed archive for easy movement?**  
+*(Yes – ReconArtifacts.zip created containing collected reconnaissance data.)*
 
-12 ➝ 13 🚩: Exfil attempts imply intent to return. Did the operator establish persistence through scheduled tasks to ensure continued execution?
+11 ➝ 12 🚩: Staging rarely stops locally — exfiltration is tested soon after. **Were outbound HTTP requests attempted to simulate upload of the bundle?**  
+*(Yes – PowerShell initiated outbound connection to external IP 100.29.147.161 simulating transfer.)*
 
-13 ➝ 14 🚩: Attackers rarely trust a single persistence channel. Was a registry-based Run key added as a fallback mechanism to re-trigger the script?
+12 ➝ 13 🚩: Exfil attempts imply intent to return. **Did the operator establish persistence through scheduled tasks to ensure continued execution?**  
+*(Yes – Scheduled task "SupportToolUpdater" created to re-run the script on logon.)*
 
-14 ➝ 15 🚩: Persistence secured, the final step is narrative control. Did the attacker drop a text log resembling a helpdesk chat to possibly justify these suspicious activities? 
+13 ➝ 14 🚩: Attackers rarely trust a single persistence channel. Was a registry-based Run key added as a fallback mechanism to re-trigger the script?  
+*(No evidence found – no registry Run key or alternative autorun persistence observed.)*
+
+14 ➝ 15 🚩: Persistence secured, the final step is narrative control. **Did the attacker drop a text log resembling a helpdesk chat to possibly justify these suspicious activities?**  
+*(Yes – SupportChat_log.txt and associated .lnk created/edited to mimic legitimate remote support session.)*
