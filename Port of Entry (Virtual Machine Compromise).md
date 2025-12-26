@@ -68,7 +68,7 @@ Query logon events for interactive sessions from external sources during the inc
 88.97.178.12 is the source IP address of the Remote Desktop Protocol Connection
 
 **Why It Matters:**
-This PowerShell command represents the earliest deviation from baseline behavior on the compromised host michaelvm. The use of -ExecutionPolicy Bypass indicates a deliberate attempt to circumvent PowerShell script restrictions — a common tactic for initial payload deployment.
+The IP 88.97.178.12 is the external address the attacker used to connect via Remote Desktop Protocol (RDP). Pinpointing this source gives defenders a clear starting point: they can block the IP at the firewall, check threat intel to see if it’s linked to known actors or proxy services, and correlate it with other incidents. Knowing the exact entry vector speeds up containment and helps answer “who might be behind this?” (MITRE ATT&CK T1133 – External Remote Services).
 
 **KQL Query Used:**
 ```
@@ -96,7 +96,7 @@ Focus on the account that authenticated during the suspicious remote access sess
 kenji.sato
 
 **Why It Matters:**
-
+The account kenji.sato was the valid credential the attacker used to log in successfully. This reveals the initial foothold: defenders can immediately disable or reset the account, investigate how the password was obtained (phishing, reuse from a breach, etc.), and check for similar compromises across the organization. Using legitimate accounts lets attackers blend in, making this a critical indicator of credential compromise (MITRE ATT&CK T1078 – Valid Accounts).
 
 **KQL Query Used**
 ```
@@ -124,7 +124,7 @@ Look for file access involving keywords like board, financial, or crypto — esp
 "ARP.EXE" -a
 
 **Why It Matters:**
-
+Running arp -a maps out nearby devices on the local network, giving the attacker a picture of potential next targets. Spotting this early reconnaissance shows the attacker is actively exploring the environment and planning lateral movement, allowing defenders to anticipate and monitor those systems before deeper access occurs (MITRE ATT&CK T1018 – Remote System Discovery).
 
 **KQL Query Used:**
 ```
@@ -150,7 +150,7 @@ C:\ProgramData\WindowsCache
 Nov 20, 2025 2:05:30 AM
 
 **Why It Matters:**
-
+Creating C:\ProgramData\WindowsCache as a hidden staging folder lets the attacker store tools in a location that looks semi-legitimate and isn’t routinely checked. Identifying these non-standard directories reveals where payloads are hidden and helps build detection rules for unusual folder creation in system paths (MITRE ATT&CK T1564 – Hide Artifacts).
 
 
 **KQL Query Used:**
@@ -177,7 +177,7 @@ Search DeviceRegistryEvents for registry modifications to Windows Defender's exc
 powershell.exe -ExecutionPolicy AllSigned -NoProfile -NonInteractive -Command "& {$OutputEncoding = [Console]::OutputEncoding =[System.Text.Encoding]::UTF8;$scriptFileStream = [System.IO.File]::Open('C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1', [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read);$calculatedHash = Microsoft.PowerShell.Utility\Get-FileHash 'C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1' -Algorithm SHA256;if (!($calculatedHash.Hash -eq '25fda4c27044455e664e8c26cdd2911117493a9122c002cd9462a9ce9c677f22')) { exit 323;}; . 'C:\ProgramData\Microsoft\Windows Defender Advanced Threat Protection\DataCollection\8809.14144035.0.14144035-462fc402c4ea5c03148fd915012f3d7aee74f9d4\05f2c576-9ed5-41eb-9b1e-1b653eebfdff.ps1' }"
 
 **Why It Matters:**
-
+Adding specific extensions to Windows Defender exclusions disables scanning for those file types, giving downloaded malware a safe landing zone. This change directly weakens endpoint protection and highlights why monitoring Defender configuration modifications is essential for catching evasion in progress (MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify Tools).
 
 **KQL Query Used:**
 ```
@@ -204,6 +204,7 @@ Search DeviceRegistryEvents for folder path exclusions added to Windows Defender
 C:\Users\KENJI~1.SAT\AppData\Local\Temp
 
 **Why It Matters:**
+Excluding the Temp folder from scans allows temporary malicious files to execute without interference. This common tactic reduces detection risk for short-lived payloads and shows the need for alerts on exclusion changes, especially to high-write locations (MITRE ATT&CK T1562.001 – Impair Defenses).
 
 **KQL Query Used:**
 ```
@@ -228,8 +229,9 @@ Look for built-in Windows tools with network download capabilities being used du
 **Identified Command**
 certutil.exe
 Nov 20, 2025 2:06:58 AM
-**Why It Matters:**
 
+**Why It Matters:**
+Using certutil.exe—a built-in Windows tool—to download payloads avoids triggering alerts that third-party downloaders would cause. This living-off-the-land approach makes the activity look administrative, emphasizing why behavioral monitoring of native utilities is key (MITRE ATT&CK T1105 – Ingress Tool Transfer).
 
 KQL Query Used:
 ```
@@ -256,7 +258,9 @@ Search for scheduled task creation commands executed during the attack timeline.
 **Identified Scheduled Task:**
 Windows Update Check
 Nov 20, 2025 2:07:46 AM
+
 **Why It Matters:**
+The fake task “Windows Update Check” ensures the malware runs again after reboot or logon. Naming it to mimic legitimate updates helps it evade review; detecting these masquerading tasks lets defenders remove persistence quickly and improve monitoring of new scheduled tasks (MITRE ATT&CK T1053.005 – Scheduled Task).
 
 **KQL Query Used:**
 ```
@@ -283,7 +287,7 @@ C:\ProgramData\WindowsCache\svchost.exe
 Nov 20, 2025 2:07:46 AM
 
 **Why It Matters:**
-
+This reveals the exact malicious executable (svchost.exe in a non-standard path) the task launches. Knowing the payload location enables precise cleanup and hunting for similar anomalous binaries across the environment (MITRE ATT&CK T1053.005 – Scheduled Task).
 
 **KQL Query Used:**
 ```
@@ -311,6 +315,7 @@ Analyse network connections initiated by the suspicious executable shortly after
 Nov 20, 2025 1:37:26 AM
 
 **Why It Matters:**
+The outbound connection to 78.141.196.6 on port 443 is the malware checking in with the attacker’s server. Blocking this IP/domain disrupts command flow and prevents further instructions or data theft, making it a high-priority indicator for network-level containment (MITRE ATT&CK T1071 – Application Layer Protocol).
 
 **KQL Query Used:**
 ```
@@ -321,8 +326,6 @@ DeviceNetworkEvents
 ```
 
 <img width="1703" height="101" alt="image" src="https://github.com/user-attachments/assets/5cd5847a-c4fb-4805-978c-697945ae0897" />
-
-
 
 
 ### 🧭 Flag 11 – COMMAND & CONTROL - C2 Communication Port
@@ -337,7 +340,7 @@ Examine the destination port for outbound connections from the malicious executa
 443
 
 **Why It Matters:**
-
+Traffic over port 443 blends malicious C2 with normal HTTPS, bypassing port-based blocks. Recognizing this pattern pushes defenses toward TLS inspection and behavioral anomaly detection rather than relying solely on firewalls (MITRE ATT&CK T1571 – Non-Standard Port / HTTPS blending).
 
 **KQL Query Used:**
 ```
@@ -360,8 +363,9 @@ Look for executables downloaded to the staging directory with very short filenam
 **Identified Executable:**
 mm.exe
 Nov 20, 2025 2:07:22 AM
-**Why It Matters:**
 
+**Why It Matters:**
+Downloading a renamed Mimikatz (mm.exe) signals intent to dump credentials from memory. Catching the transfer early limits the window for password theft and prompts proactive credential rotation (MITRE ATT&CK T1003 – OS Credential Dumping).
 
 **KQL Query Used:**
 ```
@@ -389,7 +393,7 @@ Examine the command line arguments passed to the credential dumping tool. Look f
 Nov 20, 2025 2:08:26 AM
 
 **Why It Matters:**
-
+The specific Mimikatz arguments (sekurlsa::logonpasswords) confirm successful extraction of clear-text credentials from LSASS. This evidence drives immediate enterprise-wide password resets and evaluation of protections like Credential Guard (MITRE ATT&CK T1003.001 – LSASS Memory).
 
 **KQL Queries Used:**
 ```
@@ -414,8 +418,11 @@ Attackers compress stolen data for efficient exfiltration. The archive filename 
 Search for ZIP file creation in the staging directory during the collection phase. Look for Compress-Archive commands or examine files created before exfiltration activity.
 
 **Compressed archives for Data Exfiltration:**
+export-data.zip
 
 **Why It Matters:**
+
+Creating zip archives (e.g., export-data.zip) organizes stolen files for efficient exfiltration. Identifying these staging files reveals exactly what data was targeted and helps assess business impact or regulatory exposure (MITRE ATT&CK T1560 – Archive Collected Data).
 
 **KQL Query Used:**
 ```
@@ -441,7 +448,7 @@ discord
 Nov 20, 2025 2:09:21 AM
 
 **Why It Matters:**
-
+Uploading data via Discord abuses a trusted consumer service to move stolen files out undetected. This highlights the growing challenge of detecting exfiltration over allowed platforms and the value of DLP controls on cloud collaboration tools (MITRE ATT&CK T1567 – Exfiltration Over Web Service).
 
 **KQL Query Used:**
 ```
@@ -468,7 +475,7 @@ Security
 Nov 20, 2025 2:11:39 AM
 
 **Why It Matters:**
-
+Clearing the Security log first removes evidence of authentication and privilege use. This sophisticated cover-up tactic underscores the need to forward logs to a central protected SIEM in real time (MITRE ATT&CK T1070.001 – Clear Windows Event Logs).
 
 **KQL Query Used:**
 ```
@@ -496,7 +503,7 @@ Search for account creation commands executed during the impact phase. Look for 
 support
 
 **Why It Matters:**
-
+Adding a hidden local admin account (“support”) creates a long-term backdoor. Discovering these planted accounts allows immediate removal and strengthens controls around local account creation and monitoring (MITRE ATT&CK T1098 – Account Manipulation).
 
 **KQL Query Used:**
 ```
@@ -524,8 +531,9 @@ Search DeviceFileEvents for script files created in temporary directories during
 **Found PowerShell Script to Start Attack Chain:**
 Nov 20, 2025 1:37:40 AM
 wupdate.ps1
-**Why It Matters:**
 
+**Why It Matters:**
+The PowerShell script wupdate.ps1 automated most of the attack chain from the start. Analyzing it reveals the attacker’s full playbook and tooling, aiding threat intelligence and future detection signatures (MITRE ATT&CK T1059.001 – PowerShell).
 
 **KQL Query Used:**
 ```
@@ -536,9 +544,6 @@ DeviceProcessEvents
 | project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 ```
 <img width="1678" height="135" alt="image" src="https://github.com/user-attachments/assets/656c2f22-51e3-44be-90d7-dee068d70c56" />
-
-
-
 
 ---
 
@@ -555,7 +560,7 @@ Examine the target system specified in remote access commands during lateral mov
 Nov 20, 2025 2:10:41 AM
 
 **Why It Matters:**
-
+Targeting IP 10.1.0.188 shows the attacker’s next objective—likely a system with higher privileges or sensitive data. Mapping intended movement paths helps defenders prioritize protection and isolation of critical assets (MITRE ATT&CK T1021 – Remote Services).
 
 **KQL Query Used:**
 ```
@@ -566,10 +571,6 @@ DeviceProcessEvents
 | project Timestamp, FileName, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
 ```
 <img width="1670" height="384" alt="image" src="https://github.com/user-attachments/assets/4381ab9d-2771-4b70-9a8f-e29989b3e882" />
-
-
-
-
 
 ---
 
@@ -583,9 +584,8 @@ Search for remote desktop connection utilities executed near the end of the atta
 mstsc.exe
 Nov 20, 2025 2:10:41 AM
 
-
 **Why It Matters:**
-
+Using native mstsc.exe for RDP to the next target makes the activity look like legitimate administration. This blending is why restricting and logging internal RDP use, plus network segmentation, are key defenses (MITRE ATT&CK T1021.001 – Remote Desktop Protocol).
 
 **KQL Query Used:**
 ```
@@ -598,272 +598,66 @@ DeviceProcessEvents
 <img width="1699" height="388" alt="image" src="https://github.com/user-attachments/assets/d0d87a69-2271-4ccb-b649-47e96ebb6bdb" />
 
 
-
-
-
-
----
-## 🔍 Timeline of Events
-
-| **Timestamp (UTC)**                | **Event**                                                         | **Device**  | **Details**                                                      |
-| ---------------------------------- | ----------------------------------------------------------------- | ----------- | ---------------------------------------------------------------- |
-| **2025-06-14 15:38:45**            | First activity detected on `michaelvm`                            | michaelvm   | Initial signs of temp folder execution                           |
-| **2025-06-15 (evening)**           | Scheduled Task created                                            | michaelvm   | `MarketHarvestJob` set to run client\_update.hta with PowerShell |
-| **2025-06-16 05:56:59**            | Reconnaissance via `net group "Domain Admins"` command            | michaelvm   | SHA256: `badf4752413...` initiated from PowerShell               |
-| **2025-06-16 06:12:28**            | Sensitive document accessed: `QuarterlyCryptoHoldings.docx`       | michaelvm   | From folder `Documents\BoardMinutes`                             |
-| **2025-06-16 06:32:09**            | ADS-style DLL `investor_report.dll` dropped                       | michaelvm   | SHA1: `801262e122db...` in Temp folder                           |
-| **2025-06-16 06:41:24**            | Registry persistence established via autorun key                  | michaelvm   | Key: `HKCU\...\Run` with value `WalletUpdater`                   |
-| **2025-06-16 08:32:34**            | Lateral movement command to `centralsrvr` executed via `schtasks` | michaelvm   | Command targets `centralsrvr` using credentials                  |
-| **2025-06-17 03:00:49**            | Last lateral movement command confirmed                           | michaelvm   | Final pivot toward `centralsrvr`                                 |
-| **2025-06-17 22:23:24**            | Sensitive document accessed on `centralsrvr`                      | centralsrvr | `QuarterlyCryptoHoldings.docx` accessed remotely by `MICHA3L`    |
-| **2025-06-17 22:23:28 – 22:23:31** | Data exfiltration attempts to: Google Drive, Dropbox, Pastebin    | centralsrvr | MD5: `2e5a8590cf68...`                                           |
-| **2025-06-18 10:52:33**            | Event log clearing with `wevtutil cl Security`                    | centralsrvr | Attempt to wipe forensic evidence                                |
-| **2025-06-18 10:52:59**            | PowerShell downgrade to v2 for evasion                            | centralsrvr | Likely to disable ScriptBlock/AMSI logging                       |
-
-
 ---
 
-## 🧩 MITRE ATT&CK Mapping
+### Intrusion Narrative Chain
 
-| **Flag/Event**                       | **Tactic** (TA#)                | **Technique** (T#)                                      | **Details**                                                         |
-| ------------------------------------ | ------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Initial PowerShell Execution**     | Execution (TA0002)              | T1059.001 – PowerShell                                  | Bypass flag used to execute `.ps1` script from user directory       |
-| **Recon: Domain Admins Query**       | Discovery (TA0007)              | T1069.002 – Domain Groups                               | Recon via `net group "Domain Admins"` from PowerShell               |
-| **Sensitive File Access**            | Collection (TA0009)             | T1005 – Data from Local System                          | Accessed `QuarterlyCryptoHoldings.docx` in `Documents\BoardMinutes` |
-| **bitsadmin.exe Download**           | Command and Control (TA0011)    | T1105 – Ingress Tool Transfer                           | Used `bitsadmin.exe` to download a payload stealthily               |
-| **Payload Drop: ledger\_viewer.exe** | Execution (TA0002)              | T1204.002 – User Execution: Malicious File              | Fake financial viewer dropped in Temp folder                        |
-| **HTA Abuse via mshta.exe**          | Execution (TA0002)              | T1218.005 – mshta                                       | Used to execute malicious `client_update.hta`                       |
-| **ADS DLL Drop**                     | Defense Evasion (TA0005)        | T1564.004 – Hidden Files and Directories: ADS           | DLL (`investor_report.dll`) mimicked hidden stream behavior         |
-| **Registry Persistence**             | Persistence (TA0003)            | T1547.001 – Registry Run Keys                           | Added `WalletUpdater` entry to HKCU autorun                         |
-| **Scheduled Task Creation**          | Persistence (TA0003), Execution | T1053.005 – Scheduled Task/Job: Scheduled Task          | `MarketHarvestJob` created for logon persistence                    |
-| **Lateral Movement via schtasks**    | Lateral Movement (TA0008)       | T1021.003 – Remote Services: Windows Admin Shares       | schtasks used with `/S` to pivot to `centralsrvr`                   |
-| **Remote Document Access**           | Collection (TA0009)             | T1213 – Data from Information Repositories              | Remote access to same financial doc from second host                |
-| **Exfiltration to Pastebin/Cloud**   | Exfiltration (TA0010)           | T1048.003 – Exfiltration Over Alternative Protocol      | Exfil to Google Drive, Dropbox, Pastebin                            |
-| **PowerShell Downgrade**             | Defense Evasion (TA0005)        | T1059.001 + T1562.001 – Input Capture + Disable Logging | Downgrade to PowerShell v2 to evade modern logging                  |
-| **Log Clearing**                     | Defense Evasion (TA0005)        | T1070.001 – Clear Windows Event Logs                    | `wevtutil.exe cl Security` used prior to exit                       |
+0 ➝ 1 🚩: Initial access often starts with remote services exposed to the internet. **Was RDP used from an external source to gain entry?**  
+*(Yes – successful RDP connection originated from external IP 88.97.178.12, establishing the initial foothold.)*
 
+1 ➝ 2 🚩: Once connected remotely, attackers rely on valid credentials to authenticate. **Was a legitimate user account compromised to complete the logon?**  
+*(Yes – the account kenji.sato was used for authentication, allowing the attacker to operate as a legitimate user.)*
 
----
+2 ➝ 3 🚩: With access secured, early discovery focuses on mapping the local network. **Did the attacker enumerate nearby systems to identify potential targets?**  
+*(Yes – arp -a was executed to discover devices on the local segment, revealing the network layout.)*
 
-## 💠 Diamond Model Summary
+3 ➝ 4 🚩: To avoid detection, attackers create non-obvious locations for their tools. **Was a hidden staging directory established for malware and payloads?**  
+*(Yes – C:\ProgramData\WindowsCache was created as a concealed directory for storing malicious files.)*
 
-| **Feature**        | **Details**                                                                                                                                                                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Adversary**      | - Likely a hands-on-keyboard threat actor or red team simulation using stealthy, multi-stage execution.<br>- Demonstrated knowledge of LOLBins, evasion tactics, and lateral movement.                                                   |
-| **Infrastructure** | - External command & control via cloud services: `drive.google.com`, `dropbox.com`, `pastebin.com`, `104.22.69.199`.<br>- Delivery and execution through living-off-the-land binaries (`bitsadmin.exe`, `mshta.exe`, `wevtutil.exe`).    |
-| **Capability**     | - PowerShell scripts with execution policy bypass and version downgrade for AMSI evasion.<br>- Recon tools (`net group`), ADS payloads, scheduled tasks, and registry persistence.<br>- Data exfiltration over alternative web channels. |
-| **Victim**         | - Initial: `michaelvm` (entry point)<br>- Lateral: `centralsrvr`<br>- Targeted files: `QuarterlyCryptoHoldings.docx` on both machines<br>- Sensitive folder paths and scheduled tasks abused for persistence and access.                 |
----
-## 💡 Key Relationships:
-- Adversary used capability (PowerShell, LOLBins, recon, persistence) on victim (michaelvm, then centralsrvr)
+4 ➝ 5 🚝: Weakening endpoint protection improves survival odds. **Were specific file extensions excluded from Windows Defender scanning?**  
+*(Yes – three extensions were added to Defender exclusions, preventing scans of attacker-chosen file types.)*
 
-- Adversary leveraged infrastructure (public cloud services + native tools) to exfiltrate data
+5 ➝ 6 🚩: Further evasion involves protecting high-activity folders. **Was the temporary folder excluded from real-time protection?**  
+*(Yes – the Temp folder path was added to exclusions, creating a safe space for transient payloads.)*
 
-- Capability enabled movement from initial compromise to expansion and cleanup
+6 ➝ 7 🚩: Attackers frequently abuse built-in utilities to pull down additional tools. **Was certutil used to download malicious payloads?**  
+*(Yes – certutil.exe was leveraged to fetch external files while appearing administrative.)*
 
----
+7 ➝ 8 🚩: Persistence ensures access survives reboots. **Was a scheduled task created under a deceptive name?**  
+*(Yes – a task named “Windows Update Check” was registered to maintain access.)*
 
-## ✅ Conclusion
+8 ➝ 9 🚩: The task needs a target to execute. **Did the scheduled task point to a malicious binary in the staging directory?**  
+*(Yes – the task was configured to run svchost.exe from the hidden WindowsCache folder.)*
 
-The Lurker threat scenario exposed a stealthy multi-phase intrusion that began with the abuse of PowerShell and native Windows tools and evolved into a targeted data exfiltration campaign. The adversary executed with precision, leveraging legitimate binaries (LOLBins), social engineering payloads, registry and scheduled task persistence, and evasion techniques such as PowerShell version downgrades and event log clearing.
+9 ➝ 10 🚩: After landing, implants typically reach out to attacker infrastructure. **Did the malware send an initial beacon to a command-and-control server?**  
+*(Yes – outbound connection established to 78.141.196.6 on port 443, confirming C2 communication.)*
 
-Through forensic analysis of process events, file reads, registry changes, and network activity, we successfully reconstructed the adversary’s kill chain across two compromised systems: michaelvm and centralsrvr.
+10 ➝ 11 🚩: Blending C2 traffic with legitimate protocols evades network filters. **Was port 443 used to mask command-and-control activity?**  
+*(Yes – all C2 traffic flowed over HTTPS on port 443, indistinguishable from normal web traffic at the port level.)*
 
----
+11 ➝ 12 🚩: With a foothold and C2, attackers move to credential theft. **Was a known credential-dumping tool transferred to the host?**  
+*(Yes – a renamed Mimikatz binary mm.exe was downloaded and staged.)*
 
-## 🧠 Lessons Learned
-- **Initial Access Often Mimics Legitimate Use**
-  
- PowerShell activity from user folders with policy bypass flags should raise alerts even when they look routine.
+12 ➝ 13 🚩: The tool is only useful when executed with specific modules. **Were LSASS memory extraction commands run to harvest credentials?**  
+*(Yes – mm.exe executed privilege::debug and sekurlsa::logonpasswords, successfully dumping credentials.)*
 
-- **LOLBin Abuse Is a Persistent Risk**
+13 ➝ 14 🚩: Stolen data must be organized before exfiltration. **Was collected information compressed into an archive for easier transfer?**  
+*(Yes – export-data.zip and similar archives were created in the staging directory containing recon output.)*
 
- Adversaries increasingly favor native tools (bitsadmin, mshta, wevtutil) to avoid detection by EDRs.
+14 ➝ 15 🚩: Attackers increasingly abuse trusted platforms for data theft. **Was a consumer cloud service used as the exfiltration channel?**  
+*(Yes – curl.exe uploaded the archive to Discord, leveraging a legitimate service to move data out.)*
 
-- **Persistence Tactics Are Layered**
+15 ➝ 16 🚩: Covering tracks is a priority before departure. **Were critical event logs cleared to remove forensic evidence?**  
+*(Yes – wevtutil.exe cleared the Security log first, erasing records of authentication and privilege use.)*
 
- Registry keys and scheduled tasks were both used, ensuring the attacker maintained control across reboots.
+16 ➝ 17 🚩: Long-term access requires fallback options. **Was a hidden local administrator account created for future use?**  
+*(Yes – a new account named “support” was added to the local Administrators group as a persistent backdoor.)*
 
-- **Cloud Services Can Be Used for Exfiltration**
+17 ➝ 18 🚩: Automation drives efficiency in post-compromise activity. **Was a PowerShell script used to orchestrate the attack chain?**  
+*(Yes – wupdate.ps1 served as the primary execution payload that automated most observed actions.)*
 
- Dropbox, Google Drive, and Pastebin were all leveraged for outbound data transfers, evading traditional filters.
+18 ➝ 19 🚩: With credentials and data in hand, attackers pivot deeper. **Did the attacker target a specific internal system for lateral movement?**  
+*(Yes – RDP connection initiated toward internal IP 10.1.0.188, indicating the next high-value target.)*
 
-- **Downgrade Attacks Undermine Modern Logging**
-
- PowerShell downgrade to Version 2 disabled script block logging and AMSI defenses.
-
-- **Cleaning Logs ≠ Cleaning Up**
-
- Even though logs were cleared, timestamps and forensic remnants allowed a full attack reconstruction.
-
----
-
-## 🛡 Remedial Actions
-1. **Enhance PowerShell Monitoring**
-
-- Enforce Constrained Language Mode
-
-- Block execution of PowerShell v2 where possible
-
-- Enable deep script block logging and central collection
-
-2. **Detect and Block LOLBin Abuse**
-
-- Alert on uncommon use of mshta.exe, bitsadmin.exe, and wevtutil.exe
-
-- Use allow-listing to limit legitimate LOLBin usage
-
-3. **Harden Persistence Defenses**
-
-- Monitor HKCU\Software\Microsoft\Windows\CurrentVersion\Run
-
-- Detect suspicious scheduled task creation by non-admin users
-
-4. **Restrict Outbound Access to Known Cloud Services**
-
-- Block access to file-sharing platforms not explicitly approved (e.g., Dropbox, Pastebin)
-
-- Use CASB or DLP to inspect cloud-bound traffic
-
-5. **Implement Lateral Movement Protections**
-
-- Audit schtasks.exe usage with remote /S flag
-
-- Require MFA and remove excessive admin privileges
-
-6. **Automate Log Integrity Verification**
-
-- Set alerts for wevtutil cl activity
-
-- Forward logs to a secure, remote SIEM that is tamper-resistant
-
-
-
-
-### 🚩 Flag 1 – INITIAL ACCESS - Remote Access Source
-
-🎯 **Objective:**  
-Remote Desktop Protocol connections leave network traces that identify the source of unauthorized access. Determining the origin helps with threat actor attribution and blocking ongoing attacks.
-
-📌 **Finding:**  
-Source IP of RDP connection: `88.97.178.12`
-
-🔍 **Evidence:**
-
-| Field       | Value                        |
-|-------------|------------------------------|
-| Host        | azuki-sl                     |
-| Timestamp   | 2025-11-18 .. 2025-11-21    |
-| ActionType  | LogonSuccess                 |
-| AccountName | [varies]                     |
-| RemoteIP    | 88.97.178.12                 |
-| RemoteIPType| External                     |
-| DeviceName  | azuki-sl                     |
-
-💡 **Why it matters:**  
-This shows *how the attacker first entered the environment*. An external RDP login is a classic initial access vector. The attacker also executed PowerShell using `-ExecutionPolicy Bypass`, suggesting intentional evasion of safeguards.  
-MITRE ATT&CK: **TA0001 – Initial Access**, **T1078 – Valid Accounts**.
-
-🔧 **KQL Query Used**
-    DeviceLogonEvents
-    | where DeviceName == "azuki-sl"
-    | where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
-    | where RemoteIP contains "."
-    | where ActionType == "LogonSuccess"
-    | project Timestamp, ActionType, AccountName, RemoteIP, RemoteIPType, RemoteDeviceName
-    | order by Timestamp asc
-
-🖼️ Screenshot  
-Insert screenshot here
-
-🛠️ **Detection Recommendation**
-```
-    DeviceLogonEvents
-    | where ActionType == "LogonSuccess" and RemoteIPType == "External"
-    | summarize Count=count() by AccountName, RemoteIP, DeviceName
-    | where Count > 0
-```
-```md
-### 🚩 Flag 2 – INITIAL ACCESS - Compromised User Account
-
-🎯 **Objective:**  
-Identifying which credentials were compromised determines the scope of unauthorized access and guides remediation efforts, including password resets and privilege reviews.
-
-📌 **Finding:**  
-Compromised user account: `kenji.sato`
-
-🔍 **Evidence:**
-
-| Field       | Value                        |
-|-------------|------------------------------|
-| Host        | azuki-sl                     |
-| Timestamp   | 2025-11-18 .. 2025-11-21    |
-| ActionType  | LogonSuccess                 |
-| AccountName | kenji.sato                   |
-| RemoteIP    | [varies]                     |
-| DeviceName  | azuki-sl                     |
-
-💡 **Why it matters:**  
-Compromised credentials allow attackers to move laterally and access sensitive systems without triggering typical initial access alerts. Monitoring these accounts can prevent deeper compromise.  
-MITRE ATT&CK: **TA0001 – Initial Access**, **T1078 – Valid Accounts**.
-
-🔧 **KQL Query Used**
-    DeviceLogonEvents
-    | where DeviceName == "azuki-sl"
-    | where Timestamp between (datetime(2025-11-18) .. datetime(2025-11-21))
-    | where RemoteIP contains "."
-    | where ActionType == "LogonSuccess"
-    | project Timestamp, ActionType, AccountName, RemoteIP, RemoteIPType, RemoteDeviceName
-    | order by Timestamp asc
-
-🖼️ Screenshot  
-Insert screenshot here
-
-🛠️ **Detection Recommendation**
-```mdat
-    DeviceLogonEvents
-    | where ActionType == "LogonSuccess"
-    | summarize Count=count() by AccountName, DeviceName
-    | where Count > 3
-```
-```md
-### 🚩 Flag 3 – DISCOVERY - Network Reconnaissance
-
-🎯 **Objective:**  
-Detect commands that reveal local network devices and their hardware addresses, which indicate reconnaissance activity.
-
-📌 **Finding:**  
-Command executed: `"ARP.EXE" -a`
-
-🔍 **Evidence:**
-
-| Field                  | Value                       |
-|------------------------|-----------------------------|
-| Host                   | azuki-sl                    |
-| Timestamp              | 2025-11-19 .. 2025-11-21   |
-| DeviceName             | azuki-sl                    |
-| ProcessCommandLine      | "ARP.EXE" -a               |
-| FolderPath             | [varies]                    |
-| AccountName            | [varies]                    |
-| IsProcessRemoteSession | [true/false]                |
-
-💡 **Why it matters:**  
-ARP scans indicate the attacker is mapping internal networks, which is critical for planning lateral movement. Detecting these early prevents deeper penetration.  
-MITRE ATT&CK: **TA0007 – Discovery**, **T1046 – Network Service Scanning**.
-
-🔧 **KQL Query Used**
-    DeviceProcessEvents
-    | where DeviceName == "azuki-sl"
-    | where Timestamp between (startofday(datetime(2025-11-19)) .. endofday(datetime(2025-11-21)))
-    | project Timestamp, DeviceName, ProcessCommandLine, FolderPath, AccountName, IsProcessRemoteSession
-
-🖼️ Screenshot  
-Insert screenshot here
-
-🛠️ **Detection Recommendation**
-```mdat
-    DeviceProcessEvents
-    | where ProcessCommandLine contains "ARP.EXE"
-    | summarize Count=count() by DeviceName, AccountName
-    | where Count > 1
-```
+19 ➝ 20 🚩: Native tools help lateral movement blend with admin activity. **Was the built-in Remote Desktop client used to attempt the pivot?**  
+*(Yes – mstsc.exe was launched with arguments pointing to the secondary target, using legitimate RDP for movement.)*
