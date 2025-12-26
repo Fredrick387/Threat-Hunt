@@ -1,15 +1,17 @@
-# Threat-Hunting-Port-of-Entry-Jade-Spider-APT-
+# Threat Hunting Port of Entry(Jade Spider APT)
 INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社 SITUATION:   COMPANY: Azuki Import/Export Trading Co. - 23 employees, shipping logistics Japan/SE Asia  EVIDENCE AVAILABLE: Microsoft Defender for Endpoint logs
 
+<img width="740" height="1110" alt="image" src="https://github.com/user-attachments/assets/09b44f4a-1670-4804-8009-5287751e7e8d" />
 
-# 🕵️‍♀️ Threat Hunt Report: **Lurker**
+
+# 🕵️‍♀️ Threat Hunt Report: **Port of Entry**
 
 Analyst: Fredrick Wilson
 
 Date Completed: 11/25/2025
 
 Environment Investigated: 
-
+AZUKI-SL (IT admin workstation)
 Timeframe: 11/20/2025
 
 ## 🧠 Scenario Overview
