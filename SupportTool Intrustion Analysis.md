@@ -1,7 +1,8 @@
-# Threat-Hunting-Malicious-Tech-Support
+# Threat Hunting Malicious Tech Support
 Multiple machines in the department started spawning processes originating from the download folders. This unexpected scenario occurred during the first half of October. Several machines were found to share the same types of files — similar executables, naming patterns, and other traits. keywords discovered “desk,” “help,” “support,” and “tool.”
 
-<img width="832" height="1248" alt="image" src="https://github.com/user-attachments/assets/09d6a062-f86a-4337-a324-80f7c55c2cc4" />
+<img width="832" height="1248" alt="image" src="https://github.com/user-attachments/assets/dbeb6edd-4536-46cf-80d5-e250f2034976" />
+
 
 
 #  Threat Hunt Report: Support Session
