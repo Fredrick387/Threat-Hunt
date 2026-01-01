@@ -446,7 +446,9 @@ Modifying file system attributes to hide directories prevents casual discovery b
 | Command Line     | `attrib.exe" +h +s C:\Windows\Logs\CBS`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Setting hidden (+h) and system (+s) attributes on directories is a common defense evasion technique used to conceal attacker artifacts from users, administrators, and basic file browsing tools. By hiding a directory under a trusted Windows path (C:\Windows\Logs\CBS), the attacker blends malicious or staging content into locations that are rarely scrutinized. 
+
+This behavior strongly maps to MITRE ATT&CK T1564.001 – Hide Artifacts: Hidden Files and Directories. While administrators may occasionally use attrib.exe, its execution from a scripting engine such as PowerShell significantly raises the signal. When observed alongside other discovery or persistence activity, this action often indicates post-compromise cleanup or preparation for longer-term access.
 
 **🔧 KQL Query Used**
 ```
@@ -465,10 +467,17 @@ DeviceProcessEvents
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-[Your Tip here]
+Use this query to hunt for attempts to hide files or directories using attribute modification, especially when initiated by scripting engines or non-interactive processes. Prioritize results on servers and shared systems, and look for attribute changes applied to system paths or uncommon directories. Correlate findings with prior discovery, credential access, or persistence activity to identify stealthy post-exploitation behavior.
 
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where FileName == "attrib.exe"
+| where ProcessCommandLine has_any("+h", "+s")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe", "wscript.exe", "cscript.exe")
+| extend TargetPath = extract(@"([A-Z]:\\[^ ]+)", 1, ProcessCommandLine)
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, TargetPath, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 
@@ -478,9 +487,9 @@ DeviceProcessEvents
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #9: COLLECTION - Staging Directory Path
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Attackers establish staging locations to organise tools and stolen data before exfiltration. This directory path is a critical IOC.
 
 **📌 Finding**  
 [Your finding/answer here, e.g., specific command or artifact.]
