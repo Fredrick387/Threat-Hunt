@@ -585,10 +585,17 @@ DeviceProcessEvents
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-[Your Tip here]
+Focus hunting on signed Windows utilities with network functionality (LOLBINs) executing outbound downloads, especially when initiated by scripting engines. Pay close attention to downloads targeting unusual directories such as C:\Windows\Logs\ or user-writable system paths. Correlating certutil usage with prior staging, discovery, or defense evasion activity significantly increases detection fidelity.
 
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where FileName == "certutil.exe"
+| where ProcessCommandLine has_any ("-urlcache", "http://", "https://")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe", "wscript.exe", "cscript.exe")
+| extend DownloadURL = extract(@"(http[s]?://[^\s]+)", 1, ProcessCommandLine)
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, DownloadURL, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 
@@ -659,39 +666,461 @@ DeviceFileEvents
 
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #12: COLLECTION - Recursive Copy Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Built-in system utilities are preferred for data staging as they're less likely to trigger security alerts. The exact command line reveals attacker methodology.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"xcopy.exe" C:\FileShares\IT-Admin C:\Windows\Logs\CBS\it-admin /E /I /H /Y
+
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                        |
+| Timestamp        | 2025-11-22T01:07:53.6430063Z              |
+| Process          | xcopy.exe                    |
+| Parent Process   | powershell.exe                      |
+| Command Line     | `"xcopy.exe" C:\FileShares\IT-Admin C:\Windows\Logs\CBS\it-admin /E /I /H /Y`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+This activity confirms deliberate and systematic data collection rather than incidental file access. The attacker repeatedly used xcopy.exe to copy multiple high-value enterprise file shares (Contracts, Financial, IT-Admin, Shipping) into a single hidden staging directory, strongly indicating preparation for exfiltration or encryption. 
+
+The consistency of tooling, destination path, and command-line switches shows hands-on keyboard activity aligned with human-operated intrusion behavior. Staging sensitive business and credential data locally is a common precursor to data theft, ransomware deployment, or double-extortion operations. 
+
+This behavior maps directly to MITRE ATT&CK T1074.001 – Data Staged: Local Data Staging, with supporting elements of T1119 – Automated Collection, and represents a high-confidence indicator of attacker intent rather than reconnaissance alone.
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+
+let timeattack = todatetime('2025-11-22T00:40:29.5749856Z');
+DeviceProcessEvents
+| where TimeGenerated between ((timeattack - 3h) .. (timeattack + 3h))
+| where DeviceName contains "azuki"
+| where FileName in ("robocopy.exe", "xcopy.exe")
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName
+| order by TimeGenerated asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1759" height="616" alt="image" src="https://github.com/user-attachments/assets/8ca0b80b-02fa-40e9-8bfb-d78f90ab84fc" />
+
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-[Your Tip here]
+Focus on native file-copy utilities writing multiple distinct source directories into a single destination path within a short time window. Repeated use of xcopy.exe, robocopy.exe, or copy targeting unusual or hidden directories (especially under C:\Windows\) is a strong signal of staging activity and should be prioritized over single copy events.
 
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where FileName in ("xcopy.exe", "robocopy.exe")
+| where ProcessCommandLine has_any ("/E", "/I", "/H")
+| where ProcessCommandLine contains @"C:\Windows\"
+| summarize CopyCount = count(),
+            DistinctSources = dcount(extract(@"([A-Z]:\\[^ ]+)", 1, ProcessCommandLine)),
+            FirstSeen = min(TimeGenerated),
+            LastSeen = max(TimeGenerated)
+  by DeviceName, AccountName, ProcessCommandLine
+| where CopyCount >= 2 or DistinctSources >= 2
+| order by LastSeen desc
 ```
 
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #13: COLLECTION - Compression Command
+**🎯 Objective**  
+Cross-platform compression tools indicate attacker sophistication. The full command line reveals the exact archiving methodology used.
+
+**📌 Finding**  
+"tar.exe" -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin .
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | azuki-fileserver01                   |
+| Timestamp        | 2025-11-22T01:30:10.0981853Z           |
+| Process          | tar.exe                   |
+| Parent Process   | powershell.exe                     |
+| Command Line     | `tar.exe" -czf C:\Windows\Logs\CBS\credentials.tar.gz -C C:\Windows\Logs\CBS\it-admin`                 |
+
+**💡 Why it matters**  
+The use of tar.exe on a Windows system is a strong indicator of deliberate attacker tradecraft rather than routine administrative activity. Attackers commonly compress staged data to reduce size, preserve directory structure, and prepare files for rapid exfiltration or encryption. 
+
+In this case, the archive targets a hidden staging directory (C:\Windows\Logs\CBS\it-admin) that already contains harvested credential material, confirming this activity as a late-stage collection step rather than benign maintenance. Compression marks a clear transition from discovery and collection into exfiltration readiness, meaning containment urgency is high. 
+
+This behavior aligns with MITRE ATT&CK T1560.001 – Archive Collected Data: Archive via Utility, a technique frequently observed immediately prior to data theft or ransomware deployment.
+
+**🔧 KQL Query Used**
+```
+let timeattack4 = todatetime('2025-11-22T01:07:53.6430063Z');
+DeviceProcessEvents
+| where TimeGenerated between ((timeattack4 - 2h) .. (timeattack4 + 2h))
+| where DeviceName contains "azuki"
+| where FileName  in ("tar.exe", "gzip.exe")
+| project TimeGenerated, DeviceName, AccountName, ActionType, ProcessCommandLine, InitiatingProcessCommandLine, FolderPath
+| order by TimeGenerated desc
+```
+**🖼️ Screenshot**
+<img width="1733" height="575" alt="image" src="https://github.com/user-attachments/assets/bdb2cc46-dde6-4ae8-a280-8816581b8c98" />
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+Use this query during proactive threat hunts to identify archive creation from suspicious or nonstandard directories (e.g., Windows\Logs, Temp, user-writable system paths). Pay close attention to compression tools executed by scripting engines such as PowerShell, and correlate results with earlier file copy or credential discovery activity to confirm malicious staging behavior.
+
+```
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where FileName in ("tar.exe", "gzip.exe", "7z.exe", "rar.exe")
+| where ProcessCommandLine has_any (".zip", ".tar", ".tar.gz", ".7z", ".rar")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe")
+| project TimeGenerated,
+          DeviceName,
+          AccountName,
+          FileName,
+          ProcessCommandLine,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
+```
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #
+**🎯 Objective**  
+
+
+**📌 Finding**  
+
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | agfregergegerg                    |
+| Timestamp        | 242342342342342             |
+| Process          | xcsfsfwewefw                    |
+| Parent Process   | posfwwefwfwefwe                      |
+| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+
+**💡 Why it matters**  
+Tgergergergregergergegergerg
+
+**🔧 KQL Query Used**
+```
+
+```
+**🖼️ Screenshot**
+fwefwewfwefwewefwfwfwefwfwf
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+wfwfewfwefwefweewwefewfwefwewefwef
+```
+
+```
+
+<br>
+<hr>
+<br>
