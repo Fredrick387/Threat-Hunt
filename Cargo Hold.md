@@ -26,6 +26,34 @@ Microsoft Defender for Endpoint logs
 DeviceLogonEvents
 | where DeviceName contains "azuki"
 ```
+## Table of Contents
+
+- [Hunt Overview](#hunt-overview)
+
+- [🚩 Flag #1: INITIAL ACCESS - Return Connection Source](#-flag-1-initial-access---return-connection-source)
+- [🚩 Flag #2: LATERAL MOVEMENT - Compromised Device](#-flag-2-lateral-movement---compromised-device)
+- [🚩 Flag #3: VALID ACCOUNTS - Account Abuse](#-flag-3-valid-accounts---account-abuse)
+- [🚩 Flag #4: DISCOVERY - Share Discovery](#-flag-4-discovery---share-discovery)
+- [🚩 Flag #5: DISCOVERY - Remote Share Discovery](#-flag-5-discovery---remote-share-discovery)
+- [🚩 Flag #6: DISCOVERY - Privilege & Group Discovery](#-flag-6-discovery---privilege--group-discovery)
+- [🚩 Flag #7: DISCOVERY - Network Discovery](#-flag-7-discovery---network-discovery)
+- [🚩 Flag #8: DEFENSE EVASION - Hidden Directory Creation](#-flag-8-defense-evasion---hidden-directory-creation)
+- [🚩 Flag #9: COLLECTION - Data Staging](#-flag-9-collection---data-staging)
+- [🚩 Flag #10: COMMAND AND CONTROL - LOLBIN Download](#-flag-10-command-and-control---lolbin-download)
+- [🚩 Flag #11: CREDENTIAL ACCESS - Sensitive File Discovery](#-flag-11-credential-access---sensitive-file-discovery)
+- [🚩 Flag #12: COLLECTION - Bulk Data Collection](#-flag-12-collection---bulk-data-collection)
+- [🚩 Flag #13: COLLECTION - Compression Command](#-flag-13-collection---compression-command)
+- [🚩 Flag #14: CREDENTIAL ACCESS - Renamed Tool](#-flag-14-credential-access---renamed-tool)
+- [🚩 Flag #15: CREDENTIAL ACCESS - Memory Dump Command](#-flag-15-credential-access---memory-dump-command)
+- [🚩 Flag #16: EXFILTRATION - Upload Command](#-flag-16-exfiltration---upload-command)
+- [🚩 Flag #17: EXFILTRATION - Cloud Service](#-flag-17-exfiltration---cloud-service)
+- [🚩 Flag #18: PERSISTENCE - Registry Value Name](#-flag-18-persistence---registry-value-name)
+- [🚩 Flag #19: PERSISTENCE - Beacon Filename](#-flag-19-persistence---beacon-filename)
+- [🚩 Flag #20: ANTI-FORENSICS - History File Deletion](#-flag-20-anti-forensics---history-file-deletion)
+
+- [High-Level Summary](#high-level-summary)
+
+
 
 ## Hunt Overview
 
@@ -58,6 +86,7 @@ This hunt documents a full post-compromise intrusion lifecycle on a Windows serv
 
 
 ### 🚩 Flag 1: INITIAL ACCESS - Return Connection Source
+
 **🎯 Objective**  
 After establishing initial access, sophisticated attackers often wait hours or days (dwell time) before continuing operations. They may rotate infrastructure between sessions to avoid detection.
 
