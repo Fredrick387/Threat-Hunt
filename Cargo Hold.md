@@ -793,41 +793,63 @@ DeviceProcessEvents
 <hr>
 <br>
 
-### 🚩 Flag #
+### 🚩 Flag #14: CREDENTIAL ACCESS - Renamed Tool
 **🎯 Objective**  
-
+Renaming credential dumping tools is a basic OPSEC practice to evade signature-based detection.
 
 **📌 Finding**  
-
+pd.exe
 
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
+| Host             | azuki-fileserver01                   |
+| Timestamp        | 2025-11-22T02:03:19.9845969Z           |
+| Process          | powershell.exe                   |
+| Parent Process   | powershell.exe                     |
+| Command Line     | `powershell.exe`                 |
 
 **💡 Why it matters**  
-Tgergergergregergergegergerg
+Renaming credential dumping tools is a common evasion technique used to bypass signature-based detections that rely on known filenames such as mimikatz.exe. The appearance of an unfamiliar executable (pd.exe) created shortly before credential access activity strongly suggests a renamed or custom-packed dumping utility. 
+
+Attackers frequently stage these tools under innocuous names to blend into the environment and delay defender response. When combined with prior collection, staging, and compression behavior, this indicates the attacker is actively attempting to harvest credentials for lateral movement or privilege escalation. 
+
+This activity maps to MITRE ATT&CK T1003 – OS Credential Dumping, with evasion via T1036 – Masquerading, and represents a high-confidence signal of hands-on-keyboard adversary activity.
 
 **🔧 KQL Query Used**
 ```
-
+let timeattack4 = todatetime('2025-11-22T01:07:53.6430063Z');
+DeviceFileEvents
+| where TimeGenerated between ((timeattack4 - 1h) .. (timeattack4 + 1h))
+| where DeviceName contains "azuki"
+| where ActionType == "FileCreated"
+| project TimeGenerated, DeviceName, ActionType, FileName, InitiatingProcessCommandLine, FolderPath
+| order by TimeGenerated desc
 ```
 **🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
+<img width="1745" height="208" alt="image" src="https://github.com/user-attachments/assets/5d17ebfb-dbd6-421a-935c-91f7fee67ee4" />
+
 
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
-```
+Use this query to hunt for newly created executables in atypical directories that are shortly followed by credential access, discovery, or compression activity. Prioritize binaries launched by PowerShell or created outside standard install paths, especially on servers and high-value systems. Correlating file creation with suspicious process execution within a short time window significantly increases detection confidence.
 
+```
+DeviceFileEvents
+| where TimeGenerated > ago(30d)
+| where ActionType == "FileCreated"
+| where FileName endswith ".exe"
+| where FolderPath has_any ("\\Windows\\Logs\\", "\\Temp\\", "\\ProgramData\\")
+| project TimeGenerated,
+          DeviceName,
+          FileName,
+          FolderPath,
+          InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 <br>
