@@ -408,9 +408,9 @@ DeviceProcessEvents
 <img width="1499" height="630" alt="image" src="https://github.com/user-attachments/assets/e68c218e-8f6c-4291-b1f8-1109e75b5e36" />
 
 **🛠️ Detection Recommendation**
-
 <br>
-***Hunting tip:***
+***Hunting Tip***
+
 Prioritize results where network enumeration commands are executed shortly after process launch from powershell.exe or cmd.exe, especially on servers or non-workstation hosts. Chaining this activity with subsequent share discovery or credential access events often reveals a clear attacker reconnaissance sequence.
 <br>
 ```
@@ -428,34 +428,45 @@ DeviceProcessEvents
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #8: DEFENSE EVASION - Directory Hiding Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Modifying file system attributes to hide directories prevents casual discovery by users and some security tools. Document the exact command line used.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"attrib.exe" +h +s C:\Windows\Logs\CBS
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | 2025-11-22T00:55:43.9986049Z              |
+| Process          | attrib.exe                  |
+| Parent Process   | powershell.exe                       |
+| Command Line     | `attrib.exe" +h +s C:\Windows\Logs\CBS`                 |
 
 **💡 Why it matters**  
 [Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine has_any ("{", "[", "+", "|") 
+| where InitiatingProcessFileName == "powershell.exe"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1528" height="745" alt="image" src="https://github.com/user-attachments/assets/ffed7bd7-b192-41fc-b10a-8a75131315bf" />
+
 
 **🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+[Your Tip here]
+
 ```
 [Your exact KQL query here]
 ```
@@ -495,6 +506,10 @@ DeviceProcessEvents
 [Your screenshot here]
 
 **🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+[Your Tip here]
+
 ```
 [Your exact KQL query here]
 ```
@@ -534,6 +549,10 @@ DeviceProcessEvents
 [Your screenshot here]
 
 **🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+[Your Tip here]
+
 ```
 [Your exact KQL query here]
 ```
@@ -571,6 +590,10 @@ DeviceProcessEvents
 [Your screenshot here]
 
 **🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+[Your Tip here]
+
 ```
 [Your exact KQL query here]
 ```
@@ -610,6 +633,11 @@ DeviceProcessEvents
 [Your screenshot here]
 
 **🛠️ Detection Recommendation**
+
+**Hunting Tip:**  
+[Your Tip here]
+
 ```
 [Your exact KQL query here]
 ```
+
