@@ -28,22 +28,34 @@ DeviceLogonEvents
 ```
 
 ## Hunt Overview
-[Brief description of the scenario, objective, and key findings. Keep it 2-3 sentences for quick read.]
 
-| Flag | Technique | MITRE ID | Priority |
-|------|-----------|----------|----------|
-| 1    | [Technique] | [ID] | Critical |
-| 2    | [Technique] | [ID] | High |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
-| ...  | ... | ... | ... |
+This hunt documents a full post-compromise intrusion lifecycle on a Windows server, beginning with valid account abuse and lateral movement, progressing through credential access, bulk data collection, and exfiltration, and concluding with persistence and anti-forensic cleanup. The activity demonstrates deliberate attacker tradecraft aligned with multiple high-confidence MITRE ATT&CK techniques.
+
+| Flag | Technique Category            | MITRE ID     | Priority |
+|------|------------------------------|--------------|----------|
+| 1    | Initial Access (Return)      | T1078        | Critical |
+| 2    | Lateral Movement (RDP)       | T1021.001    | Critical |
+| 3    | Valid Account Abuse          | T1078        | Critical |
+| 4    | Share Discovery              | T1135        | High     |
+| 5    | Remote Share Discovery       | T1135        | High     |
+| 6    | Privilege Discovery          | T1033 / T1069| High     |
+| 7    | Network Discovery            | T1016        | Medium   |
+| 8    | Defense Evasion (Hidden Files)| T1564.001   | High     |
+| 9    | Data Staging                 | T1074.001    | Critical |
+| 10   | LOLBIN Download              | T1105        | Critical |
+| 11   | Credential Discovery         | T1552.001    | Critical |
+| 12   | Bulk Data Collection         | T1074.001    | Critical |
+| 13   | Data Compression             | T1560.001    | High     |
+| 14   | Tool Masquerading            | T1036        | High     |
+| 15   | LSASS Memory Dump             | T1003.001    | Critical |
+| 16   | Data Exfiltration (HTTP)     | T1048.003    | Critical |
+| 17   | Cloud Exfiltration           | T1567.002    | Critical |
+| 18   | Persistence (Registry Run Key)| T1547.001   | High     |
+| 19   | Persistence (Masqueraded Beacon)| T1036    | High     |
+| 20   | Anti-Forensics (History Deletion)| T1070.003 | High     |
+
 ---
+
 
 ### 🚩 Flag 1: INITIAL ACCESS - Return Connection Source
 **🎯 Objective**  
@@ -1277,3 +1289,10 @@ DeviceFileEvents
 <br>
 <hr>
 <br>
+
+
+## High-Level Summary
+
+This intrusion represents a full-spectrum post-compromise attack leveraging valid credentials to re-enter the environment, move laterally via RDP, and systematically enumerate the network and host. The attacker demonstrated strong operational discipline by staging data in nonstandard system directories, abusing living-off-the-land binaries (LOLBins), and carefully sequencing actions to avoid early detection.
+
+Credential access via LSASS memory dumping marked a decisive escalation, followed by deliberate compression and exfiltration of sensitive data using both direct HTTP transfer and cloud-based file hosting to blend with legitimate traffic. Persistence was established through registry autorun keys using masqueraded filenames, and the operation concluded with targeted anti-forensic actions to remove PowerShell execution history. Overall, the activity reflects a capable adversary executing a methodical, goal-oriented campaign rather than opportunistic or automated malware.
