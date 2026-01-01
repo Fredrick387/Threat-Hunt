@@ -8,6 +8,8 @@
 </p>
 
 
+<br>
+<br>
 # INCIDENT BRIEF - Cargo Hold -Azuki Import/Export - 梓貿易株式会社
 
 **📋 INCIDENT BRIEF**
@@ -26,6 +28,9 @@ Microsoft Defender for Endpoint logs
 DeviceLogonEvents
 | where DeviceName contains "azuki"
 ```
+<br>
+<br>
+
 <details>
 <summary><strong>📚 Table of Contents</strong></summary>
 
@@ -56,7 +61,8 @@ DeviceLogonEvents
 
 </details>
 
-
+<br>
+<br>
 
 
 ## Hunt Overview
@@ -88,7 +94,8 @@ This hunt documents a full post-compromise intrusion lifecycle on a Windows serv
 
 ---
 
-
+<br>
+<br>
 ### 🚩 Flag 1: INITIAL ACCESS - Return Connection Source
 
 **🎯 Objective**  
@@ -138,7 +145,8 @@ DeviceLogonEvents
 <br>
 <hr>
 <br>
-
+<br>
+<br>
 
 ### 🚩 Flag 2: LATERAL MOVEMENT - Compromised Device
 **🎯 Objective**  
@@ -191,6 +199,8 @@ DeviceProcessEvents
 
 <br>
 <hr>
+<br>
+<br>
 <br>
 
 ### 🚩 Flag 3: LATERAL MOVEMENT - Compromised Account
@@ -247,6 +257,8 @@ DeviceLogonEvents
 
 <br>
 <hr>
+<br>
+<br>
 <br>
 
 ### 🚩 Flag 4: DISCOVERY - Share Enumeration Command
