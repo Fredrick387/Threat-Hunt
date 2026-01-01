@@ -302,36 +302,69 @@ DeviceProcessEvents
 <br>
 
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #6: DISCOVERY - Privilege Enumeration
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Understanding current user privileges and group memberships helps attackers determine what actions they can perform and whether privilege escalation is needed.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"whoami.exe" /all
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | 2025-11-22T00:42:24.1217046Z               |
+| Process          | whoami.exe                     |
+| Parent Process   | "powershell.exe                      |
+| Command Line     | `"whoami.exe" /all`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Running whoami.exe /all is a high-signal discovery action that reveals the attacker’s effective privileges, group memberships, token elevation status, and assigned rights under the current session. This information allows an attacker to immediately assess whether they already have administrative or delegated access, or whether privilege escalation is required before proceeding. 
 
-**🔧 KQL Query Used**
+In real-world intrusions, this step often precedes credential abuse, lateral movement, or direct access to sensitive systems when elevated roles (e.g., Domain Users with special rights, local administrators, backup operators) are discovered. 
+
+The use of this command via PowerShell strongly aligns with MITRE ATT&CK T1033 – System Owner/User Discovery and T1069 – Permission Group Discovery. Because it provides rapid confirmation of attack feasibility with minimal noise, whoami /all is commonly observed in hands-on-keyboard activity and is a reliable indicator of interactive attacker presence, not automated background activity.
+
+**🔧 KQL Query Used** (filter "whoami")
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1505" height="629" alt="image" src="https://github.com/user-attachments/assets/65486d2d-e43f-4ff1-b2f0-1070a4263538" />
+
 
 **🛠️ Detection Recommendation**
+<br>
+***Hunting tip:***
+Prioritize results where the initiating process is powershell.exe, the account is non-IT or service-based, or the activity occurs shortly after initial access or lateral movement events.
+<br>
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d)   // Tune for hunt scope
+| where FileName in ("whoami.exe", "cmd.exe", "powershell.exe")
+| where ProcessCommandLine has_any(
+    "whoami /all",
+    "whoami /groups",
+    "whoami /priv",
+    "Get-LocalGroup",
+    "Get-LocalGroupMember",
+    "net localgroup",
+    "net user"
+)
+| project
+    TimeGenerated,
+    DeviceName,
+    AccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessCommandLine,
+    InitiatingProcessAccountName
+| order by TimeGenerated desc
 ```
 
 
@@ -339,36 +372,55 @@ DeviceProcessEvents
 <hr>
 <br>
 
-### 🚩 Flag # – [Flag Title]
+### 🚩 Flag #7: DISCOVERY - Network Configuration Command
 **🎯 Objective**  
-[Describe the objective of this flag in 1-2 sentences.]
+Network configuration enumeration helps attackers understand the target environment, identify domain membership, and discover additional network segments.
 
 **📌 Finding**  
-[Your finding/answer here, e.g., specific command or artifact.]
+"ipconfig.exe" /all
 
 **🔍 Evidence**
 
 | Field            | Value                                      |
 |------------------|--------------------------------------------|
-| Host             | [e.g., victim-vm]                          |
-| Timestamp        | [e.g., 2025-12-11T12:00:00Z]               |
-| Process          | [e.g., powershell.exe]                     |
-| Parent Process   | [e.g., explorer.exe]                       |
-| Command Line     | `[Your command line here]`                 |
+| Host             | azuki-fileserver01                         |
+| Timestamp        | 2025-11-22T00:42:46.3655894Z               |
+| Process          | ipconfig.exe                     |
+| Parent Process   | "powershell.exe"                       |
+| Command Line     | `"ipconfig.exe" /all`                 |
 
 **💡 Why it matters**  
-[Explain the impact, real-world relevance, MITRE mapping, and why this is a high-signal indicator. 4-6 sentences for depth.]
+Running ipconfig /all provides attackers with detailed insight into the host’s network configuration, including IP addresses, DNS servers, default gateways, and domain membership. This information helps determine whether the system is domain-joined, identify internal DNS infrastructure, and reveal additional network segments that may be reachable. 
+
+In real-world intrusions, this command is commonly executed immediately after initial access to orient the attacker within the environment. When observed alongside other discovery activity, it strongly indicates hands-on-keyboard reconnaissance rather than benign automation. 
+
+This behavior maps to MITRE ATT&CK T1016 – System Network Configuration Discovery and is a reliable early-stage signal of active adversary presence.
 
 **🔧 KQL Query Used**
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where Timestamp between (startofday(date(2025-11-22)) .. endofday(date(2025-11-22)))
+| where DeviceName contains "azuki"
+| project Timestamp, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine, FileName
+| order by Timestamp asc
 ```
 **🖼️ Screenshot**
-[Your screenshot here]
+<img width="1499" height="630" alt="image" src="https://github.com/user-attachments/assets/e68c218e-8f6c-4291-b1f8-1109e75b5e36" />
 
 **🛠️ Detection Recommendation**
+
+<br>
+***Hunting tip:***
+Prioritize results where network enumeration commands are executed shortly after process launch from powershell.exe or cmd.exe, especially on servers or non-workstation hosts. Chaining this activity with subsequent share discovery or credential access events often reveals a clear attacker reconnaissance sequence.
+<br>
 ```
-[Your exact KQL query here]
+DeviceProcessEvents
+| where TimeGenerated > ago(30d) 
+| where FileName in ("ipconfig.exe", "cmd.exe", "powershell.exe")
+| where ProcessCommandLine has_any("ipconfig /all", "ipconfig.exe /all", "Get-NetIPConfiguration", "Get-NetAdapter")
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated desc
+
 ```
 
 
