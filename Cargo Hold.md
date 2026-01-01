@@ -26,7 +26,8 @@ Microsoft Defender for Endpoint logs
 DeviceLogonEvents
 | where DeviceName contains "azuki"
 ```
-## Table of Contents
+<details>
+<summary><strong>📚 Table of Contents</strong></summary>
 
 - [Hunt Overview](#hunt-overview)
 
@@ -52,6 +53,9 @@ DeviceLogonEvents
 - [🚩 Flag #20: ANTI-FORENSICS - History File Deletion](#-flag-20-anti-forensics---history-file-deletion)
 
 - [High-Level Summary](#high-level-summary)
+
+</details>
+
 
 
 
