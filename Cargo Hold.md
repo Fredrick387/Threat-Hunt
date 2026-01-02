@@ -36,30 +36,31 @@ DeviceLogonEvents
 
 - [Hunt Overview](#hunt-overview)
 
-- [🚩 Flag #1: INITIAL ACCESS - Return Connection Source](#-flag-1-initial-access---return-connection-source)
-- [🚩 Flag #2: LATERAL MOVEMENT - Compromised Device](#-flag-2-lateral-movement---compromised-device)
-- [🚩 Flag #3: VALID ACCOUNTS - Account Abuse](#-flag-3-valid-accounts---account-abuse)
-- [🚩 Flag #4: DISCOVERY - Share Discovery](#-flag-4-discovery---share-discovery)
-- [🚩 Flag #5: DISCOVERY - Remote Share Discovery](#-flag-5-discovery---remote-share-discovery)
-- [🚩 Flag #6: DISCOVERY - Privilege & Group Discovery](#-flag-6-discovery---privilege--group-discovery)
-- [🚩 Flag #7: DISCOVERY - Network Discovery](#-flag-7-discovery---network-discovery)
-- [🚩 Flag #8: DEFENSE EVASION - Hidden Directory Creation](#-flag-8-defense-evasion---hidden-directory-creation)
-- [🚩 Flag #9: COLLECTION - Data Staging](#-flag-9-collection---data-staging)
-- [🚩 Flag #10: COMMAND AND CONTROL - LOLBIN Download](#-flag-10-command-and-control---lolbin-download)
-- [🚩 Flag #11: CREDENTIAL ACCESS - Sensitive File Discovery](#-flag-11-credential-access---sensitive-file-discovery)
-- [🚩 Flag #12: COLLECTION - Bulk Data Collection](#-flag-12-collection---bulk-data-collection)
-- [🚩 Flag #13: COLLECTION - Compression Command](#-flag-13-collection---compression-command)
-- [🚩 Flag #14: CREDENTIAL ACCESS - Renamed Tool](#-flag-14-credential-access---renamed-tool)
-- [🚩 Flag #15: CREDENTIAL ACCESS - Memory Dump Command](#-flag-15-credential-access---memory-dump-command)
-- [🚩 Flag #16: EXFILTRATION - Upload Command](#-flag-16-exfiltration---upload-command)
-- [🚩 Flag #17: EXFILTRATION - Cloud Service](#-flag-17-exfiltration---cloud-service)
-- [🚩 Flag #18: PERSISTENCE - Registry Value Name](#-flag-18-persistence---registry-value-name)
-- [🚩 Flag #19: PERSISTENCE - Beacon Filename](#-flag-19-persistence---beacon-filename)
-- [🚩 Flag #20: ANTI-FORENSICS - History File Deletion](#-flag-20-anti-forensics---history-file-deletion)
+- [🚩 Flag #1: Initial Access](#flag-1)
+- [🚩 Flag #2: Lateral Movement](#flag-2)
+- [🚩 Flag #3: Valid Accounts Abuse](#flag-3)
+- [🚩 Flag #4: Share Discovery](#flag-4)
+- [🚩 Flag #5: Remote Share Discovery](#flag-5)
+- [🚩 Flag #6: Privilege & Group Discovery](#flag-6)
+- [🚩 Flag #7: Network Discovery](#flag-7)
+- [🚩 Flag #8: Defense Evasion](#flag-8)
+- [🚩 Flag #9: Data Staging](#flag-9)
+- [🚩 Flag #10: LOLBIN Download](#flag-10)
+- [🚩 Flag #11: Credential Discovery](#flag-11)
+- [🚩 Flag #12: Bulk Data Collection](#flag-12)
+- [🚩 Flag #13: Data Compression](#flag-13)
+- [🚩 Flag #14: Tool Masquerading](#flag-14)
+- [🚩 Flag #15: LSASS Memory Dump](#flag-15)
+- [🚩 Flag #16: Data Exfiltration](#flag-16)
+- [🚩 Flag #17: Cloud Exfiltration](#flag-17)
+- [🚩 Flag #18: Registry Persistence](#flag-18)
+- [🚩 Flag #19: Beacon Filename](#flag-19)
+- [🚩 Flag #20: History File Deletion](#flag-20)
 
 - [High-Level Summary](#high-level-summary)
 
 </details>
+
 
 <br>
 <br>
@@ -96,6 +97,7 @@ This hunt documents a full post-compromise intrusion lifecycle on a Windows serv
 
 <br>
 <br>
+<a id="flag-1"></a>
 ### 🚩 Flag 1: INITIAL ACCESS - Return Connection Source
 
 **🎯 Objective**  
@@ -147,7 +149,7 @@ DeviceLogonEvents
 <br>
 <br>
 <br>
-
+<a id="flag-2"></a>
 ### 🚩 Flag 2: LATERAL MOVEMENT - Compromised Device
 **🎯 Objective**  
 Lateral movement targets are selected based on their access to sensitive data or network privileges. File servers are high-value targets containing business-critical information.
@@ -202,7 +204,7 @@ DeviceProcessEvents
 <br>
 <br>
 <br>
-
+<a id="flag-3"></a>
 ### 🚩 Flag 3: LATERAL MOVEMENT - Compromised Account
 **🎯 Objective**  
 Identifying which credentials were compromised determines the scope of unauthorised access and guides remediation efforts.
@@ -260,7 +262,7 @@ DeviceLogonEvents
 <br>
 <br>
 <br>
-
+<a id="flag-4"></a>
 ### 🚩 Flag 4: DISCOVERY - Share Enumeration Command
 **🎯 Objective**  
 Network share enumeration reveals available data repositories and helps attackers identify targets for collection and exfiltration.
@@ -309,7 +311,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-5"></a>
 ### 🚩 Flag #5: DISCOVERY - Remote Share Enumeration
 **🎯 Objective**  
 Attackers enumerate remote network shares to identify accessible file servers and data repositories across the network.
@@ -362,7 +364,7 @@ DeviceProcessEvents
 <hr>
 <br>
 
-
+<a id="flag-6"></a>
 ### 🚩 Flag #6: DISCOVERY - Privilege Enumeration
 **🎯 Objective**  
 Understanding current user privileges and group memberships helps attackers determine what actions they can perform and whether privilege escalation is needed.
@@ -432,7 +434,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-7"></a>
 ### 🚩 Flag #7: DISCOVERY - Network Configuration Command
 **🎯 Objective**  
 Network configuration enumeration helps attackers understand the target environment, identify domain membership, and discover additional network segments.
@@ -488,7 +490,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-8"></a>
 ### 🚩 Flag #8: DEFENSE EVASION - Directory Hiding Command
 **🎯 Objective**  
 Modifying file system attributes to hide directories prevents casual discovery by users and some security tools. Document the exact command line used.
@@ -547,7 +549,7 @@ DeviceProcessEvents
 <hr>
 <br>
 
-
+<a id="flag-9"></a>
 ### 🚩 Flag #9: COLLECTION - Staging Directory Path
 **🎯 Objective**  
 Attackers establish staging locations to organise tools and stolen data before exfiltration. This directory path is a critical IOC.
@@ -605,7 +607,7 @@ DeviceFileEvents
 <hr>
 <br>
 
-
+<a id="flag-10"></a>
 ### 🚩 Flag #10: DEFENSE EVASION - Script Download Command
 **🎯 Objective**  
 Legitimate system utilities with network capabilities are frequently weaponized to download malware while evading detection.
@@ -659,7 +661,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-11"></a>
 ### 🚩 Flag #11: COLLECTION - Credential File Discovery
 **🎯 Objective**  
 Credential files provide keys to the kingdom - enabling lateral movement and privilege escalation across the network.
@@ -722,7 +724,7 @@ DeviceFileEvents
 <br>
 
 
-
+<a id="flag-12"></a>
 ### 🚩 Flag #12: COLLECTION - Recursive Copy Command
 **🎯 Objective**  
 Built-in system utilities are preferred for data staging as they're less likely to trigger security alerts. The exact command line reveals attacker methodology.
@@ -787,7 +789,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-13"></a>
 ### 🚩 Flag #13: COLLECTION - Compression Command
 **🎯 Objective**  
 Cross-platform compression tools indicate attacker sophistication. The full command line reveals the exact archiving methodology used.
@@ -849,7 +851,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-14"></a>
 ### 🚩 Flag #14: CREDENTIAL ACCESS - Renamed Tool
 **🎯 Objective**  
 Renaming credential dumping tools is a basic OPSEC practice to evade signature-based detection.
@@ -912,7 +914,7 @@ DeviceFileEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-15"></a>
 ### 🚩 Flag #15: CREDENTIAL ACCESS - Memory Dump Command
 **🎯 Objective**  
 The complete process memory dump command line is critical evidence showing exactly how credentials were extracted.
@@ -980,7 +982,7 @@ DeviceProcessEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-16"></a>
 ### 🚩 Flag #16: EXFILTRATION - Upload Command
 **🎯 Objective**  
 Command-line HTTP clients enable scriptable data transfers. The complete command syntax is essential for building detection rules.
@@ -1046,7 +1048,7 @@ DeviceProcessEvents
 <hr>
 <br>
 
-
+<a id="flag-17"></a>
 ### 🚩 Flag #17 EXFILTRATION - Cloud Service
 **🎯 Objective**  
 Cloud file sharing services provide convenient, anonymous exfiltration channels that blend with legitimate business traffic.
@@ -1108,50 +1110,7 @@ DeviceNetworkEvents
 <br>
 <hr>
 <br>
-
-
-### 🚩 Flag #
-**🎯 Objective**  
-
-
-**📌 Finding**  
-
-
-
-**🔍 Evidence**
-
-| Field            | Value                                      |
-|------------------|--------------------------------------------|
-| Host             | agfregergegerg                    |
-| Timestamp        | 242342342342342             |
-| Process          | xcsfsfwewefw                    |
-| Parent Process   | posfwwefwfwefwe                      |
-| Command Line     | `"xsfsfwefwefwefwefewfwewefew`                 |
-
-**💡 Why it matters**  
-Tgergergergregergergegergerg
-
-**🔧 KQL Query Used**
-```
-
-```
-**🖼️ Screenshot**
-fwefwewfwefwewefwfwfwefwfwf
-
-
-**🛠️ Detection Recommendation**
-
-**Hunting Tip:**  
-wfwfewfwefwefweewwefewfwefwewefwef
-```
-
-```
-
-<br>
-<hr>
-<br>
-
-
+<a id="flag-18"></a>
 ### 🚩 Flag #18: PERSISTENCE - Registry Value Name
 **🎯 Objective**  
 Registry autorun keys provide reliable persistence that executes on every system startup or user logon.
@@ -1215,7 +1174,7 @@ DeviceRegistryEvents
 <hr>
 <br>
 
-
+<a id="flag-19"></a>
 ### 🚩 Flag #19: PERSISTENCE - Beacon Filename
 **🎯 Objective**  
 Process masquerading involves naming malicious files after legitimate Windows components to avoid suspicion.
@@ -1275,7 +1234,7 @@ DeviceFileEvents
 <br>
 <hr>
 <br>
-
+<a id="flag-20"></a>
 ### 🚩 Flag #20: ANTI-FORENSICS - History File Deletion
 **🎯 Objective**  
 PowerShell saves command history to persistent files that survive session termination. Attackers target these files to cover their tracks.
