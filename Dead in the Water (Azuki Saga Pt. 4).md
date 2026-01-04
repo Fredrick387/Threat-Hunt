@@ -407,7 +407,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-8">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-8">🚩 <strong>Flag 8: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -491,20 +491,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-10">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-10">🚩 <strong>Flag 10: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+rm -rf /backups/archives
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:47:02.660493Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -513,10 +513,36 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki-backupsrv"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has_any (
+    "rm -f",
+    "rm -rf",
+    "unlink ",
+    "xargs rm",
+    "find / -exec rm",
+    "shred ",
+    "dd if=",
+    "dd of=",
+    "truncate ",
+    "/var/backups",
+    "/backups",
+    "/etc/bacula",
+    "/var/lib/bacula",
+    ".tar",
+    ".tar.gz",
+    ".zip",
+    ".bak",
+    "chmod 000",
+    "chattr -i",
+    "chattr +i"
+)
+| project TimeGenerated, DeviceName, AccountName, InitiatingProcessCommandLine, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1527" height="160" alt="image" src="https://github.com/user-attachments/assets/9b45c1bc-d77a-40c2-acdf-770ec63093f6" />
 
 ### 🛠️ Detection Recommendation
 
@@ -527,32 +553,40 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-11">🚩 <strong>Flag 11: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+systemctl stop cron
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:47:03.659261Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Command Line | systemctl stop cron |
 
 ### 💡 Why it matters
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki-backupsrv"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has_any (
+    "systemctl stop",  "service ",  "service stop",  "pkill ",  "kill ",  "killall ",    "sv stop",  "rc-service",  "chkconfig", "initctl stop")
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
+
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="804" height="163" alt="image" src="https://github.com/user-attachments/assets/5178b54c-a5db-451e-babd-c39cc1c249ac" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -563,20 +597,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-12">🚩 <strong>Flag 12: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+systemctl disable cron
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:47:03.679621Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -585,10 +619,27 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki-backupsrv"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has_any (
+    "systemctl stop",
+    "systemctl disable",
+    "systemctl mask",
+    "service stop",
+    "initctl stop",
+    "rc-service stop",
+    "update-rc.d",
+    "chkconfig off",
+    "pkill ",
+    "killall "
+)
+| project TimeGenerated, AccountName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="575" height="106" alt="image" src="https://github.com/user-attachments/assets/2a925017-a324-4fb9-a8b0-39eedd9f413c" />
+
 
 ### 🛠️ Detection Recommendation
 
