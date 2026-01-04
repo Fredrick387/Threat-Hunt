@@ -10,6 +10,7 @@
 
 
 
+
 # 🛡️ Threat Hunt Report – <Hunt Name>
 
 ---
@@ -114,14 +115,19 @@ _All flags below are collapsible for readability._
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+DeviceNetworkEvents
+| where TimeGenerated >= ago(45d)
+| where RemotePort == 22
+| where RemoteIP has "10." or RemoteIP has "172." or RemoteIP has "192."
+| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP
+| order by TimeGenerated asc
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:39:11.0836084Z|
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -133,7 +139,8 @@ _All flags below are collapsible for readability._
 <Add KQL here>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1527" height="142" alt="image" src="https://github.com/user-attachments/assets/da941ffe-cb3a-45bb-8468-28288009e8e2" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -145,7 +152,7 @@ _All flags below are collapsible for readability._
 ---
 
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
