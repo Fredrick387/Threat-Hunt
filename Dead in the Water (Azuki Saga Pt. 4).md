@@ -136,7 +136,12 @@ DeviceNetworkEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceNetworkEvents
+| where TimeGenerated >= ago(45d)
+| where RemotePort == 22
+| where RemoteIP has "10." or RemoteIP has "172." or RemoteIP has "192."
+| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
 <img width="1527" height="142" alt="image" src="https://github.com/user-attachments/assets/da941ffe-cb3a-45bb-8468-28288009e8e2" />
@@ -158,14 +163,14 @@ DeviceNetworkEvents
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+10.1.0.108
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:39:11.0836084Z|
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -174,10 +179,16 @@ DeviceNetworkEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceNetworkEvents
+| where TimeGenerated == datetime(2025-11-25T05:39:11.0836084Z)
+| where DeviceName == "azuki-adminpc"
+| where RemotePort == 22
+| project LocalIP
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1562" height="133" alt="image" src="https://github.com/user-attachments/assets/b4a20f90-ae37-41cd-8182-27a5210b6726" />
+
+
 
 ### 🛠️ Detection Recommendation
 
@@ -188,7 +199,7 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-3">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -201,7 +212,7 @@ DeviceNetworkEvents
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:39:11.0836084Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -210,10 +221,15 @@ DeviceNetworkEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceNetworkEvents
+| where TimeGenerated == datetime(2025-11-25T05:39:11.0836084Z)
+| where DeviceName == "azuki-adminpc"
+| where RemotePort == 22
+| project TimeGenerated, InitiatingProcessCommandLine
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1543" height="126" alt="image" src="https://github.com/user-attachments/assets/c728035b-715e-4bc6-992d-60dbf46addf8" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -224,20 +240,20 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-4">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+ls --color=auto -la /backups/
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-25T05:47:51.749736Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -246,10 +262,16 @@ DeviceNetworkEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2025-11-25T05:39:11Z) .. datetime(2025-11-25T06:30:00Z))
+| where DeviceName has "azuki-backupsrv"
+| where ProcessCommandLine has_any ("ls ", "dir ", "find ")
+| project TimeGenerated, DeviceName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1517" height="107" alt="image" src="https://github.com/user-attachments/assets/2d66000c-c33c-4fdc-8d2a-1e2dd78641be" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -260,20 +282,20 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-5">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+find /backups -name *.tar.gz
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Timestamp | 2025-11-24T14:16:06.546964Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -282,10 +304,16 @@ DeviceNetworkEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where TimeGenerated between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
+| where DeviceName has "azuki-backupsrv"
+| where AccountName has "" "backup-admin"
+| project DeviceName, AccountName, TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="1525" height="199" alt="image" src="https://github.com/user-attachments/assets/c972a0a2-7c18-4ac0-b01c-cc2dc7c23c6d" />
+
 
 ### 🛠️ Detection Recommendation
 
