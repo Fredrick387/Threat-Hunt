@@ -35,6 +35,7 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 - **Environment:** <Placeholder>  
 - **Data Sources:** <Placeholder>  
 - **Timeframe:** <YYYY-MM-DD → YYYY-MM-DD>  
+![Uploading image.png…]()
 
 ---
 
