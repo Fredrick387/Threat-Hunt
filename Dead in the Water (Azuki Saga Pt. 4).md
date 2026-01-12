@@ -163,7 +163,7 @@ DeviceNetworkEvents
 ---
 
 <details>
-<summary id="-flag-2">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag 2: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -205,7 +205,7 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-3">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-3">🚩 <strong>Flag 3: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -246,7 +246,7 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-4">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-4">🚩 <strong>Flag 4: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -288,7 +288,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-5">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-5">🚩 <strong>Flag 5: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -455,7 +455,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-9">🚩 <strong>Flag x: <Technique Name></strong></summary>
+<summary id="-flag-9">🚩 <strong>Flag 9: <Technique Name></strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
