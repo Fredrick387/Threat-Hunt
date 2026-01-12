@@ -134,9 +134,9 @@ DeviceNetworkEvents
 |------|-------|
 | Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z|
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | ssh.exe |
+| Parent Process | Unknown |
+| Command Line | "ssh.exe" backup-admin@10.1.0.189 |
 
 ### 💡 Why it matters
 This activity maps directly to **MITRE ATT&CK – TA0008: Lateral Movement**, specifically **T1021.004: Remote Services – SSH**. Adversaries who obtain valid credentials frequently use SSH to move laterally within internal networks because it is trusted, encrypted, and often poorly monitored. 
@@ -144,12 +144,14 @@ This activity maps directly to **MITRE ATT&CK – TA0008: Lateral Movement**, sp
 In ransomware and destructive intrusion campaigns, attackers deliberately pivot to backup servers and administrative systems via SSH to disable recovery mechanisms, exfiltrate credentials, or stage payloads prior to impact. Detection of unexpected SSH-based lateral movement is therefore critical for identifying hands-on-keyboard activity during the pre-encryption phase of an attack.
 
 ### 🔧 KQL Query Used
+```
 DeviceNetworkEvents
 | where TimeGenerated >= ago(45d)
 | where RemotePort == 22
 | where RemoteIP has "10." or RemoteIP has "172." or RemoteIP has "192."
 | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1527" height="142" alt="image" src="https://github.com/user-attachments/assets/da941ffe-cb3a-45bb-8468-28288009e8e2" />
