@@ -115,10 +115,10 @@ _All flags below are collapsible for readability._
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-1">🚩 <strong>Flag 1: LATERAL MOVEMENT - Remote Access</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Attackers pivot to critical infrastructure to eliminate recovery options before deploying ransomware.
 
 ### 📌 Finding
 DeviceNetworkEvents
@@ -132,7 +132,7 @@ DeviceNetworkEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z|
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -163,7 +163,7 @@ DeviceNetworkEvents
 ---
 
 <details>
-<summary id="-flag-2">🚩 <strong>Flag 2: <Technique Name></strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag 2: LATERAL MOVEMENT - Attack Source</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -175,7 +175,7 @@ DeviceNetworkEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z|
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -217,7 +217,7 @@ DeviceNetworkEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
