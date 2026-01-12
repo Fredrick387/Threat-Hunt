@@ -205,7 +205,7 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-3">🚩 <strong>Flag 3: <Technique Name></strong></summary>
+<summary id="-flag-3">🚩 <strong>Flag 3: CREDENTIAL ACCESS - Compromised Account</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -246,7 +246,7 @@ DeviceNetworkEvents
 
 ---
 <details>
-<summary id="-flag-4">🚩 <strong>Flag 4: <Technique Name></strong></summary>
+<summary id="-flag-4">🚩 <strong>Flag 4: DISCOVERY - Directory Enumeration</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -288,7 +288,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-5">🚩 <strong>Flag 5: <Technique Name></strong></summary>
+<summary id="-flag-5">🚩 <strong>Flag 5: DISCOVERY - File Search</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -330,7 +330,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-6">🚩 <strong>Flag 6: <Technique Name></strong></summary>
+<summary id="-flag-6">🚩 <strong>Flag 6: DISCOVERY - Account Enumeration</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -371,7 +371,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-7">🚩 <strong>Flag 7: <Technique Name></strong></summary>
+<summary id="-flag-7">🚩 <strong>Flag 7: DISCOVERY - Scheduled Job Reconnaissance</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -413,7 +413,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-8">🚩 <strong>Flag 8: <Technique Name></strong></summary>
+<summary id="-flag-8">🚩 <strong>Flag 8: COMMAND AND CONTROL - Tool Transfer</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -455,7 +455,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-9">🚩 <strong>Flag 9: <Technique Name></strong></summary>
+<summary id="-flag-9">🚩 <strong>Flag 9: CREDENTIAL ACCESS - Credential Theft</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -497,7 +497,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-10">🚩 <strong>Flag 10: <Technique Name></strong></summary>
+<summary id="-flag-10">🚩 <strong>Flag 10: IMPACT - Data Destruction</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -559,7 +559,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-11">🚩 <strong>Flag 11: <Technique Name></strong></summary>
+<summary id="-flag-11">🚩 <strong>Flag 11: IMPACT - Service Stopped</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -603,7 +603,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-12">🚩 <strong>Flag 12: <Technique Name></strong></summary>
+<summary id="-flag-12">🚩 <strong>Flag 12: IMPACT - Service Disabled</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -656,7 +656,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-13">🚩 <strong>Flag 13: <Technique Name></strong></summary>
+<summary id="-flag-13">🚩 <strong>Flag 13: LATERAL MOVEMENT - Remote Execution</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -699,7 +699,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-14">🚩 <strong>Flag 14: <Technique Name></strong></summary>
+<summary id="-flag-14">🚩 <strong>Flag 14: LATERAL MOVEMENT - Deployment Command</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -741,7 +741,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-15">🚩 <strong>Flag 15: <Technique Name></strong></summary>
+<summary id="-flag-15">🚩 <strong>Flag 15: EXECUTION - Malicious Payload</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -782,7 +782,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-16">🚩 <strong>Flag 16: <Technique Name></strong></summary>
+<summary id="-flag-16">🚩 <strong>Flag 16: IMPACT - Shadow Service Stopped</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -825,7 +825,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-17">🚩 <strong>Flag 17: <Technique Name></strong></summary>
+<summary id="-flag-17">🚩 <strong>Flag 17: IMPACT - Backup Engine Stopped</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -868,7 +868,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-18">🚩 <strong>Flag 18: <Technique Name></strong></summary>
+<summary id="-flag-18">🚩 <strong>Flag 18: DEFENSE EVASION - Process Termination</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -910,7 +910,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-19">🚩 <strong>Flag 19: <Technique Name></strong></summary>
+<summary id="-flag-19">🚩 <strong>Flag 19: IMPACT - Recovery Point Deletion</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -953,7 +953,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-20">🚩 <strong>Flag 20: <Technique Name></strong></summary>
+<summary id="-flag-20">🚩 <strong>Flag 20: IMPACT - Storage Limitation</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -996,7 +996,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-21">🚩 <strong>Flag 21: <Technique Name></strong></summary>
+<summary id="-flag-21">🚩 <strong>Flag 21: IMPACT - Recovery Disabled</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -1039,7 +1039,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-22">🚩 <strong>Flag 22: <Technique Name></strong></summary>
+<summary id="-flag-22">🚩 <strong>Flag 22: IMPACT - Catalog Deletion</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -1083,7 +1083,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-23">🚩 <strong>Flag 23: <Technique Name></strong></summary>
+<summary id="-flag-23">🚩 <strong>Flag 23: PERSISTENCE - Registry Autorun</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -1126,7 +1126,7 @@ DeviceRegistryEvents
 
 ---
 <details>
-<summary id="-flag-24">🚩 <strong>Flag 24: <Technique Name></strong></summary>
+<summary id="-flag-24">🚩 <strong>Flag 24: PERSISTENCE - Scheduled Execution</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -1167,7 +1167,7 @@ DeviceProcessEvents
 
 ---
 <details>
-<summary id="-flag-25">🚩 <strong>Flag 25: <Technique Name></strong></summary>
+<summary id="-flag-25">🚩 <strong>Flag 25: DEFENSE EVASION - Journal Deletion</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
@@ -1211,7 +1211,7 @@ DeviceProcessEvents
 ---
 
 <details>
-<summary id="-flag-26">🚩 <strong>Flag 26: <Technique Name></strong></summary>
+<summary id="-flag-26">🚩 <strong>Flag 26: IMPACT - Ransom Note</strong></summary>
 
 ### 🎯 Objective
 <What the attacker was trying to accomplish>
