@@ -139,7 +139,9 @@ DeviceNetworkEvents
 | Command Line | <Placeholder> |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity maps directly to **MITRE ATT&CK – TA0008: Lateral Movement**, specifically **T1021.004: Remote Services – SSH**. Adversaries who obtain valid credentials frequently use SSH to move laterally within internal networks because it is trusted, encrypted, and often poorly monitored. 
+
+In ransomware and destructive intrusion campaigns, attackers deliberately pivot to backup servers and administrative systems via SSH to disable recovery mechanisms, exfiltrate credentials, or stage payloads prior to impact. Detection of unexpected SSH-based lateral movement is therefore critical for identifying hands-on-keyboard activity during the pre-encryption phase of an attack.
 
 ### 🔧 KQL Query Used
 DeviceNetworkEvents
@@ -156,7 +158,7 @@ DeviceNetworkEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Baseline which hosts and user accounts are authorized to initiate SSH sessions to internal systems. Alert on new or rare SSH connections originating from user workstations, especially when targeting backup servers, domain controllers, or other high-value infrastructure, and correlate with credential use, privilege escalation, and subsequent destructive activity.
 
 </details>
 
@@ -182,14 +184,18 @@ DeviceNetworkEvents
 | Command Line | <Placeholder> |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity maps directly to **MITRE ATT&CK – TA0008: Lateral Movement**, specifically **T1021.004: Remote Services – SSH**. Adversaries who obtain valid credentials frequently use SSH to move laterally within internal networks because it is trusted, encrypted, and often poorly monitored. 
+
+In ransomware and destructive intrusion campaigns, attackers deliberately pivot to backup servers and administrative systems via SSH to disable recovery mechanisms, exfiltrate credentials, or stage payloads prior to impact. Detection of unexpected SSH-based lateral movement is therefore critical for identifying hands-on-keyboard activity during the pre-encryption phase of an attack.
 
 ### 🔧 KQL Query Used
+```
 DeviceNetworkEvents
 | where TimeGenerated == datetime(2025-11-25T05:39:11.0836084Z)
 | where DeviceName == "azuki-adminpc"
 | where RemotePort == 22
 | project LocalIP
+```
 
 ### 🖼️ Screenshot
 <img width="1562" height="133" alt="image" src="https://github.com/user-attachments/assets/b4a20f90-ae37-41cd-8182-27a5210b6726" />
