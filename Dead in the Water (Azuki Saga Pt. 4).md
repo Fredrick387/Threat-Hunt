@@ -171,7 +171,11 @@ Baseline which hosts and user accounts are authorized to initiate SSH sessions t
 <summary id="-flag-2">🚩 <strong>Flag 2: LATERAL MOVEMENT - Attack Source</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identifying the attack source enables network segmentation and containment.
+
+References:
+
+T1021.004: Remote Services - SSH
 
 ### 📌 Finding
 10.1.0.108
