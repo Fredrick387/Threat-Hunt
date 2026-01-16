@@ -186,9 +186,7 @@ T1021.004: Remote Services - SSH
 |------|-------|
 | Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z|
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+
 
 ### 💡 Why it matters
 This activity maps directly to **MITRE ATT&CK – TA0008: Lateral Movement**, specifically **T1021.004: Remote Services – SSH**. Adversaries who obtain valid credentials frequently use SSH to move laterally within internal networks because it is trusted, encrypted, and often poorly monitored. 
@@ -212,7 +210,7 @@ DeviceNetworkEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+When investigating lateral movement, always pivot on the source host and local IP address to anchor attacker activity. Use the identified source system to review process execution, authentication events, and outbound network connections around the same timestamp to determine whether the workstation is an initial foothold or a secondary pivot point. Confirm whether this host routinely initiates remote access sessions or if the behavior is anomalous, and prioritize containment of the source system to prevent further lateral spread.
 
 </details>
 
