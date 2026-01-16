@@ -259,7 +259,7 @@ Identify administrative or service accounts that are used interactively (SSH, RD
 <summary id="-flag-4">🚩 <strong>Flag 4: DISCOVERY - Directory Enumeration</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+File system enumeration reveals backup locations and valuable targets for destruction.
 
 ### 📌 Finding
 ls --color=auto -la /backups/
