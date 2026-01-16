@@ -219,10 +219,10 @@ When investigating lateral movement, always pivot on the source host and local I
 <summary id="-flag-3">🚩 <strong>Flag 3: CREDENTIAL ACCESS - Compromised Account</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Administrative accounts with backup privileges provide access to critical recovery infrastructure.
 
 ### 📌 Finding
-<High-level description of the activity>
+backup-admin
 
 ### 🔍 Evidence
 
@@ -230,9 +230,8 @@ When investigating lateral movement, always pivot on the source host and local I
 |------|-------|
 | Host | azuki-adminpc |
 | Timestamp | 2025-11-25T05:39:11.0836084Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | SSH.exe |
+| Command Line | "ssh.exe" backup-admin@10.1.0.189 |
 
 ### 💡 Why it matters
 <Explain impact, risk, and relevance>
@@ -251,7 +250,7 @@ DeviceNetworkEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Identify administrative or service accounts that are used interactively (SSH, RDP) rather than through automated services. Baseline expected usage of backup and recovery accounts, and alert when they are observed initiating remote sessions from user workstations or accessing systems outside their normal scope. Correlate account usage with privilege level, time of day, and lateral movement patterns to detect credential compromise early.
 
 </details>
 
