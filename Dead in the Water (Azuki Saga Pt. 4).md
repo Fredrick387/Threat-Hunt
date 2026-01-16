@@ -270,9 +270,9 @@ ls --color=auto -la /backups/
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:51.749736Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | ls |
+| Parent Process | bash |
+| Command Line | ls --color=auto -la /backups/ |
 
 ### 💡 Why it matters
 <Explain impact, risk, and relevance>
