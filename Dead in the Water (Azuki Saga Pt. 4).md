@@ -343,7 +343,7 @@ DeviceProcessEvents
 <summary id="-flag-6">🚩 <strong>Flag 6: DISCOVERY - Account Enumeration</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Attackers enumerate local accounts to understand the system's user base.
 
 ### 📌 Finding
 <High-level description of the activity>
