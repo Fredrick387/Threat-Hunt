@@ -292,7 +292,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for interactive enumeration commands (e.g., ls, find, dir) executed on backup servers, especially when initiated shortly after new remote access sessions. Baseline normal administrative activity on backup infrastructure and alert when file listing or discovery commands target known backup directories outside of routine maintenance windows, as this often precedes destructive actions.
 
 </details>
 
