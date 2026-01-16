@@ -301,7 +301,7 @@ Monitor for interactive enumeration commands (e.g., ls, find, dir) executed on b
 <summary id="-flag-5">🚩 <strong>Flag 5: DISCOVERY - File Search</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Attackers search for specific file types to identify high-value targets.
 
 ### 📌 Finding
 find /backups -name *.tar.gz
@@ -312,9 +312,9 @@ find /backups -name *.tar.gz
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-24T14:16:06.546964Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | find |
+| Parent Process | bash |
+| Command Line | find /backups -name *.tar.gz |
 
 ### 💡 Why it matters
 <Explain impact, risk, and relevance>
