@@ -1217,12 +1217,12 @@ Remove forensic artifacts and hinder recovery. File system journals track change
 |------|-------|
 | Host | <Placeholder> |
 | Timestamp | 2025-11-25T06:10:04.9145097Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | fsutil.exe |
+| Parent Process | cmd.exe |
+| Command Line | "fsutil.exe" usn deletejournal /D C: |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Indicator Removal on Host (MITRE ATT&CK T1070). Deleting the USN journal removes a key forensic data source used to track file creation, modification, and deletion. This hinders post-incident investigation, obscures attacker activity, and complicates recovery analysis. In ransomware intrusions, journal deletion is commonly used to reduce defender visibility after impact actions have begun.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -1240,7 +1240,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on fsutil commands that delete the USN journal, as this action is rarely required during normal operations. Treat journal deletion as a high-confidence defense evasion indicator, especially when observed alongside backup destruction, recovery suppression, or service termination activity.
 
 </details>
 
