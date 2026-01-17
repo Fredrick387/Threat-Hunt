@@ -820,7 +820,7 @@ Monitor for execution of newly dropped binaries, especially those launched via r
 <summary id="-flag-16">🚩 <strong>Flag 16: IMPACT - Shadow Service Stopped</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Ransomware stops backup services to prevent recovery during encryption. Disable Volume Shadow Copy Service to prevent snapshot-based recovery.
 
 ### 📌 Finding
 "net" stop VSS /y
@@ -831,12 +831,12 @@ Monitor for execution of newly dropped binaries, especially those launched via r
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:04:53.2550438Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | net.exe |
+| Parent Process | cmd.exe |
+| Command Line | net stop VSS /y |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Stopping VSS removes a common recovery mechanism, significantly increasing ransomware effectiveness.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -854,7 +854,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert immediately on VSS service stoppage, particularly when preceded by backup deletion or service disruption.
 
 </details>
 
@@ -863,7 +863,7 @@ DeviceProcessEvents
 <summary id="-flag-17">🚩 <strong>Flag 17: IMPACT - Backup Engine Stopped</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Stop Windows backup services to prevent the creation or restoration of backups. 
 
 ### 📌 Finding
 "net" stop wbengine /y
@@ -874,12 +874,12 @@ DeviceProcessEvents
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:04:54.0244502Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | net.exe |
+| Parent Process | cmd.exe |
+| Command Line | net stop wbengine /y |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Stopping the Windows Backup Engine further ensures recovery options are eliminated.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -897,7 +897,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for wbengine service stoppage and correlate with other recovery-inhibiting actions such as VSS manipulation or backup deletion.
 
 </details>
 
@@ -906,7 +906,7 @@ DeviceProcessEvents
 <summary id="-flag-18">🚩 <strong>Flag 18: DEFENSE EVASION - Process Termination</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Terminate services that could interfere with encryption or lock files. Certain processes lock files and must be terminated before encryption can succeed.
 
 ### 📌 Finding
 taskkill /F /IM sqlservr.exe
@@ -917,12 +917,12 @@ taskkill /F /IM sqlservr.exe
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:07:07.0199729Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | taskkill.exe |
+| Parent Process | cmd.exe |
+| Command Line | taskkill /F /IM sqlservr.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Process Termination (MITRE ATT&CK T1562.001 / T1489). Stopping database processes ensures files are unlocked and prevents application-level recovery during ransomware execution.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -939,7 +939,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on forced termination of critical services such as databases or security tools, especially when clustered with other impact-stage activity.
 
 </details>
 
@@ -960,12 +960,12 @@ DeviceProcessEvents
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:07:08.2198577Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | vssadmin.exe |
+| Parent Process | cmd.exe |
+| Command Line | vssadmin delete shadows /all /quiet |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Deleting Volume Shadow Copies removes one of the most common Windows recovery mechanisms, preventing rollback or file restoration after encryption. This is a well-known ransomware tactic and strongly indicates the attack has entered the irreversible impact phase.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -982,7 +982,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert immediately on vssadmin shadow deletion commands, especially when executed alongside backup deletion or service stoppage. These events should trigger emergency containment actions.
 
 </details>
 
