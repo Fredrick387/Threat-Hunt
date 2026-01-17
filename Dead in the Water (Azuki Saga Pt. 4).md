@@ -234,7 +234,7 @@ backup-admin
 | Command Line | "ssh.exe" backup-admin@10.1.0.189 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Valid Accounts – Domain Accounts (MITRE ATT&CK T1078.002), where adversaries use legitimate credentials rather than exploiting vulnerabilities. The use of a backup-related administrative account indicates the attacker has already bypassed preventive controls and is operating with trusted access. Compromise of such accounts is especially dangerous because they provide direct access to recovery infrastructure, enabling attackers to disable backups, move laterally with minimal resistance, and significantly increase the impact of ransomware or destructive attacks.
 
 ### 🔧 KQL Query Used
 DeviceNetworkEvents
@@ -275,7 +275,9 @@ ls --color=auto -la /backups/
 | Command Line | ls --color=auto -la /backups/ |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with File and Directory Discovery (MITRE ATT&CK T1083), where adversaries enumerate the file system to identify high-value data and infrastructure components. Enumerating the /backups/ directory on a backup server indicates the attacker is actively identifying recovery data that could later be deleted, encrypted, or otherwise rendered unusable. 
+
+When this behavior follows lateral movement into backup infrastructure, it strongly suggests preparation for impact rather than routine administration, and represents one of the final reconnaissance steps before destructive actions.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -317,7 +319,9 @@ find /backups -name *.tar.gz
 | Command Line | find /backups -name *.tar.gz |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with File and Directory Discovery (MITRE ATT&CK T1083), where adversaries search for specific file types to locate high-value data. By targeting compressed backup archives (*.tar.gz) within the /backups directory, the attacker is narrowing in on data that is most valuable for recovery or extortion. 
+
+This indicates focused reconnaissance rather than broad exploration, suggesting the attacker is identifying precise targets for deletion or encryption as part of a planned impact phase.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -334,7 +338,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for targeted file search commands such as find executed against backup directories, especially when filtering for archive or backup-related extensions (e.g., .tar.gz, .zip, .bak). These searches are rarely part of routine administration and often indicate attackers are identifying specific data for destruction or exfiltration. Correlate file search activity with prior remote access, directory enumeration, and privileged account usage to detect attacks progressing toward impact.
 
 </details>
 
@@ -346,7 +350,7 @@ DeviceProcessEvents
 Attackers enumerate local accounts to understand the system's user base.
 
 ### 📌 Finding
-<High-level description of the activity>
+cat /etc/passwd
 
 ### 🔍 Evidence
 
@@ -359,7 +363,9 @@ Attackers enumerate local accounts to understand the system's user base.
 | Command Line | cat /etc/passwd |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Account Discovery (MITRE ATT&CK T1087), where adversaries enumerate local accounts to understand which identities exist on a system. Reading /etc/passwd allows an attacker to identify human users, service accounts, login shells, and potential privilege boundaries. 
+
+On a backup server, this reconnaissance helps the attacker determine which accounts may be leveraged for privilege escalation, credential reuse, or broader lateral movement before executing impact actions.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -375,7 +381,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for interactive access to local account databases such as /etc/passwd, /etc/shadow, or account enumeration utilities (getent, id, lslogins) on backup and infrastructure servers. These actions are uncommon outside of troubleshooting or audits and should be correlated with recent remote access sessions and elevated account usage. Prioritize investigation when account enumeration occurs shortly after lateral movement, as it often precedes privilege escalation or destructive activity.
 
 </details>
 
@@ -395,12 +401,14 @@ cat /etc/crontab
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | cat |
+| Parent Process | bash |
+| Command Line | cat /etc/crontab |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Scheduled Task/Job Discovery (MITRE ATT&CK T1053.003 – Cron), where adversaries inspect scheduled jobs to understand automated system behavior. By reviewing /etc/crontab, the attacker can identify backup schedules, maintenance tasks, and privileged jobs that may be disabled, hijacked, or timed to coincide with destructive actions. 
+
+On a backup server, this reconnaissance helps attackers determine when backups run and how to maximize impact while minimizing detection.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -417,7 +425,9 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for interactive access to cron configuration files such as /etc/crontab and /etc/cron* on backup and infrastructure servers. These files are rarely accessed outside of maintenance or troubleshooting and should be correlated with recent remote access and discovery activity. 
+
+Prioritize investigation when scheduled job reconnaissance occurs alongside backup enumeration, as attackers often use this information to time or disable recovery mechanisms before impact.
 
 </details>
 
@@ -483,12 +493,12 @@ cat /backups/configs/all-credentials.txt
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net> |
 | Timestamp | 2025-11-24T14:14:14.217788Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | cat |
+| Parent Process | bash |
+| Command Line | cat /backups/configs/all-credentials.txt |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Credentials from Password Stores (MITRE ATT&CK T1555). Accessing a file explicitly named to contain credentials indicates the attacker is harvesting secrets rather than merely enumerating the system. On a backup server, exposed credentials often grant access to additional infrastructure, significantly expanding attacker reach and accelerating progression toward full environment compromise.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -505,7 +515,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on interactive access to files containing credential-related keywords (e.g., credentials, secrets, .env, .conf) on backup and infrastructure servers. Correlate with prior discovery and lateral movement to identify credential theft occurring late in the intrusion.
 
 </details>
 
@@ -582,7 +592,8 @@ Monitor for recursive file deletion commands such as rm -rf executed on backup o
 <summary id="-flag-11">🚩 <strong>Flag 11: IMPACT - Service Stopped</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Stopping services takes effect immediately but does NOT survive a reboot.
+Disrupt scheduled system activity to interfere with backups and system maintenance.
 
 ### 📌 Finding
 systemctl stop cron
@@ -593,12 +604,12 @@ systemctl stop cron
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:03.659261Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
+| Process | systemctl |
+| Parent Process | bash |
 | Command Line | systemctl stop cron |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Service Stop (MITRE ATT&CK T1489). Stopping the cron service prevents scheduled jobs such as backups, monitoring, or cleanup tasks from running. In ransomware attacks, this is commonly used to halt backup operations and reduce the chance of recovery or detection.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -617,7 +628,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for systemctl or service stop commands on critical infrastructure. Treat service stoppage on backup servers as high-severity, especially when it follows discovery or destructive activity.
 
 </details>
 
@@ -626,7 +637,7 @@ DeviceProcessEvents
 <summary id="-flag-12">🚩 <strong>Flag 12: IMPACT - Service Disabled</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Permanently prevent scheduled services from restarting after reboot. Disabling a service prevents it from starting at boot - this SURVIVES a reboot.
 
 ### 📌 Finding
 systemctl disable cron
@@ -637,12 +648,12 @@ systemctl disable cron
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:03.679621Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | systemctl |
+| Parent Process | bash |
+| Command Line | systemctl disable cron |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Service Stop / Modify System Services (MITRE ATT&CK T1489 / T1543). Disabling cron ensures backup and maintenance jobs do not resume, extending the impact beyond the current session and increasing operational disruption.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -670,7 +681,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert when system services are disabled on backup or infrastructure servers. Prioritize incidents where service disablement follows service stoppage or backup deletion.
 
 </details>
 
@@ -679,7 +690,7 @@ DeviceProcessEvents
 <summary id="-flag-13">🚩 <strong>Flag 13: LATERAL MOVEMENT - Remote Execution</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Execute commands remotely on additional systems using administrative access. Remote administration tools enable attackers to deploy malware across multiple systems simultaneously.
 
 ### 📌 Finding
 PsExec64.exe
@@ -690,12 +701,12 @@ PsExec64.exe
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | PsExec64.exe |
+| Parent Process | cmd.exe or powershell.exe  |
+| Command Line | PsExec64.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Remote Services: SMB/Windows Admin Shares (MITRE ATT&CK T1021.002). PsExec is a legitimate administrative tool frequently abused by attackers to move laterally and execute payloads across multiple hosts quickly.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -713,7 +724,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for PsExec execution across multiple hosts, especially outside of approved admin tooling paths. Correlate with credential compromise and prior impact actions.
 
 </details>
 
@@ -722,7 +733,11 @@ DeviceProcessEvents
 <summary id="-flag-14">🚩 <strong>Flag 14: LATERAL MOVEMENT - Deployment Command</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Full command lines reveal target systems, credentials, and deployed payloads.
+
+References:
+
+T1021.002: SMB/Windows Admin Shares
 
 ### 📌 Finding
 "PsExec64.exe" \\10.1.0.102 -u kenji.sato -p ********** -c -f C:\Windows\Temp\cache\silentlynx.exe
@@ -733,12 +748,12 @@ DeviceProcessEvents
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | PsExec64.exe |
+| Parent Process | Likely cmd.exe or powershell.exe |
+| Command Line | "PsExec64.exe" \\10.1.0.102 -u kenji.sato -p ********** -c -f C:\Windows\Temp\cache\silentlynx.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Remote Execution (MITRE ATT&CK T1021). Using PsExec with explicit credentials to copy and execute a binary shows coordinated lateral deployment of malicious tooling.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -755,7 +770,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on PsExec commands that include credential arguments and file copy flags. These are rarely used in modern admin workflows and often indicate malicious lateral deployment.
 
 </details>
 
@@ -764,7 +779,7 @@ DeviceProcessEvents
 <summary id="-flag-15">🚩 <strong>Flag 15: EXECUTION - Malicious Payload</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Execute malicious payload to carry out encryption or destructive actions. Identifying the payload enables threat hunting across the environment
 
 ### 📌 Finding
 silentlynx.exe
@@ -775,12 +790,12 @@ silentlynx.exe
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T06:03:47.900164Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | silentlynx.exe |
+| Parent Process | PsExec64.exe |
+| Command Line | silentlynx.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with User Execution / Malicious File Execution (MITRE ATT&CK T1204 / T1059). Execution of a non-standard binary deployed via PsExec strongly indicates attacker-controlled payload execution as part of the impact phase.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -796,7 +811,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for execution of newly dropped binaries, especially those launched via remote execution tools. Treat such events as high-confidence malicious activity.
 
 </details>
 
