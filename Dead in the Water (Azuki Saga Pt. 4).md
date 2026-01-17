@@ -1002,12 +1002,12 @@ Alert immediately on vssadmin shadow deletion commands, especially when executed
 |------|-------|
 | Host | azuki-adminpc, azuki-sl |
 | Timestamp | 2025-11-25T06:05:00.8701626Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | vssadmin.exe |
+| Parent Process | cmd.exe |
+| Command Line | vssadmin resize shadowstorage /for=C: /on=C: /maxsize=401mb |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Inhibit System Recovery (MITRE ATT&CK T1490). By drastically limiting shadow copy storage, the attacker ensures that new restore points cannot be created and existing ones may be deleted or overwritten. This weakens the organization’s ability to recover systems after encryption and is commonly used in ransomware attacks to guarantee recovery mechanisms remain unavailable even if backups attempt to run again.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -1025,7 +1025,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on vssadmin shadowstorage resize commands, especially when the maximum size is reduced to unusually small values. These actions are rarely legitimate and should be correlated with other recovery-inhibiting behavior such as shadow deletion, backup service stoppage, or catalog removal.
 
 </details>
 
@@ -1034,7 +1034,7 @@ DeviceProcessEvents
 <summary id="-flag-21">🚩 <strong>Flag 21: IMPACT - Recovery Disabled</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Disable Windows recovery options permanently. Windows recovery features enable automatic system repair after corruption.
 
 ### 📌 Finding
 "bcdedit" /set {default} recoveryenabled No
@@ -1045,12 +1045,12 @@ DeviceProcessEvents
 |------|-------|
 | Host | azuki-adminpc, azuki-sl  |
 | Timestamp | 2025-11-25T06:04:59.5579336Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | bcedit.exe |
+| Parent Process | cmd.exe |
+| Command Line | bcdedit /set {default} recoveryenabled No |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Disabling recovery prevents systems from booting into repair or rollback modes, making post-incident remediation significantly more difficult.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -1068,7 +1068,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on bcdedit commands modifying recovery settings, especially when combined with VSS or backup manipulation.
 
 </details>
 
@@ -1077,7 +1077,7 @@ DeviceProcessEvents
 <summary id="-flag-22">🚩 <strong>Flag 22: IMPACT - Catalog Deletion</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Destroy backup metadata to prevent restoration. Backup catalogues track available restore points and backup versions.
 
 ### 📌 Finding
 
@@ -1089,12 +1089,12 @@ DeviceProcessEvents
 |------|-------|
 | Host | <Placeholder> |
 | Timestamp | 2025-11-25T06:04:59.7181241Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | wbadmin.exe |
+| Parent Process | cmd.exe |
+| Command Line | "wbadmin" delete catalog -quiet |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Inhibit System Recovery (MITRE ATT&CK T1490). Deleting the backup catalog removes the system’s ability to identify or restore backups, even if backup files still exist.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -1112,7 +1112,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for wbadmin delete commands, which are rarely used legitimately and almost always indicate malicious recovery suppression.
 
 </details>
 
