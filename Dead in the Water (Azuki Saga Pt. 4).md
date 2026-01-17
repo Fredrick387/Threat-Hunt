@@ -1087,7 +1087,7 @@ Destroy backup metadata to prevent restoration. Backup catalogues track availabl
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc |
 | Timestamp | 2025-11-25T06:04:59.7181241Z |
 | Process | wbadmin.exe |
 | Parent Process | cmd.exe |
@@ -1121,7 +1121,7 @@ Monitor for wbadmin delete commands, which are rarely used legitimately and almo
 <summary id="-flag-23">🚩 <strong>Flag 23: PERSISTENCE - Registry Autorun</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Registry keys can execute programs automatically at system startup. Establish persistence across reboots.
 
 ### 📌 Finding
 
@@ -1131,14 +1131,15 @@ WindowsSecurityHealth
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc |
 | Timestamp | 2025-11-25T06:05:01.1151868Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | powershell.exe |
+| Parent Process | powershell.exe |
+| RegistryValueName | WindowsSecurityHealth |
+| RegistryValueData | C:\Windows\Temp\cache\silentlynx.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Boot or Logon Autostart Execution: Registry Run Keys (MITRE ATT&CK T1547.001). By creating a registry autorun entry that masquerades as a legitimate Windows component (WindowsSecurityHealth), the attacker ensures their payload will execute on every logon while blending into normal system behavior. This allows the attacker to maintain access and re-establish execution even after reboots or partial remediation.
 
 ### 🔧 KQL Query Used
 DeviceRegistryEvents
@@ -1155,7 +1156,7 @@ DeviceRegistryEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for new or modified registry Run-key entries that reference executables in temporary or user-writable directories such as C:\Windows\Temp. Prioritize investigation when autorun values impersonate legitimate Windows services or security components, as this is a common persistence technique used by ransomware operators.
 
 </details>
 
@@ -1164,7 +1165,7 @@ DeviceRegistryEvents
 <summary id="-flag-24">🚩 <strong>Flag 24: PERSISTENCE - Scheduled Execution</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Scheduled jobs provide reliable persistence with configurable triggers. Ensure malicious payload executes on user logon with elevated privileges.
 
 ### 📌 Finding
 "schtasks" /create /tn "Microsoft\Windows\Security\SecurityHealthService" /tr "C:\Windows\Temp\cache\silentlynx.exe" /sc onlogon /rl highest /f
@@ -1175,12 +1176,12 @@ DeviceRegistryEvents
 |------|-------|
 | Host | <Placeholder> |
 | Timestamp | 2025-11-25T06:05:01.1297501Z |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Process | schtasks.exe |
+| Parent Process | cmd.exe |
+| Command Line | "schtasks" /create /tn "Microsoft\Windows\Security\SecurityHealthService" /tr "C:\Windows\Temp\cache\silentlynx.exe" /sc onlogon /rl highest /f |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This aligns with Scheduled Task/Job (MITRE ATT&CK T1053.005). Creating a scheduled task provides reliable persistence and execution with high privileges, commonly used by ransomware families.
 
 ### 🔧 KQL Query Used
 DeviceProcessEvents
@@ -1196,7 +1197,7 @@ DeviceProcessEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Alert on scheduled task creation pointing to unsigned binaries or temp locations, especially when tasks masquerade as Windows services.
 
 </details>
 
@@ -1205,7 +1206,7 @@ DeviceProcessEvents
 <summary id="-flag-25">🚩 <strong>Flag 25: DEFENSE EVASION - Journal Deletion</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Remove forensic artifacts and hinder recovery. File system journals track changes and are valuable for forensic analysis.
 
 ### 📌 Finding
 "fsutil.exe" usn deletejournal /D C:
