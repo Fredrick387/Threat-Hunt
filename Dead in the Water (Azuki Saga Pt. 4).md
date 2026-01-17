@@ -17,8 +17,7 @@
 
 ## 📌 Executive Summary
 
-<Brief, high-level overview of the threat hunt.  
-Answer what happened, why it matters, and what was discovered in 3–4 sentences.>
+This threat hunt investigated a full ransomware intrusion within the Azuki Logistics environment using Microsoft Defender for Endpoint telemetry. The attacker leveraged valid credentials to move laterally into backup infrastructure, conducted targeted reconnaissance, staged tooling, and systematically destroyed recovery mechanisms before deploying ransomware. The investigation revealed deliberate, hands-on attacker behavior using trusted administrative tools to maximize impact. By the time ransomware was deployed, recovery options had already been intentionally eliminated.
 
 ---
 
@@ -32,9 +31,9 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 ## 🧭 Scope & Environment
 
-- **Environment:** <Placeholder>  
-- **Data Sources:** <Placeholder>  
-- **Timeframe:** <YYYY-MM-DD → YYYY-MM-DD> 
+- **Environment:** Azuki Logistics corporate Windows and Linux environment, including user workstations and backup infrastructure  
+- **Data Sources:** Microsoft Defender for Endpoint (Advanced Hunting telemetry: DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents, DeviceRegistryEvents)  
+- **Timeframe:** 2025-11-24 → 2025-11-25  
 - **Link:** https://docs.google.com/forms/d/e/1FAIpQLSdGLxM71I2kXx4L9MhB6ipWMKCDXJxJRjXTNg_3gK1SkDmQ8g/viewform
 ![Uploading image.png…]()
 
@@ -45,31 +44,31 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 - [🧠 Hunt Overview](#-hunt-overview)
 - [🧬 MITRE ATT&CK Summary](#-mitre-attck-summary)
 - [🔍 Flag Analysis](#-flag-analysis)
-  - [🚩 Flag 1](#-flag-1)
-  - [🚩 Flag 2](#-flag-2)
-  - [🚩 Flag 3](#-flag-3)
-  - [🚩 Flag 4](#-flag-4)
-  - [🚩 Flag 5](#-flag-5)
-  - [🚩 Flag 6](#-flag-6)
-  - [🚩 Flag 7](#-flag-7)
-  - [🚩 Flag 8](#-flag-8)
-  - [🚩 Flag 9](#-flag-9)
-  - [🚩 Flag 10](#-flag-10)
-  - [🚩 Flag 11](#-flag-11)
-  - [🚩 Flag 12](#-flag-12)
-  - [🚩 Flag 13](#-flag-13)
-  - [🚩 Flag 14](#-flag-14)
-  - [🚩 Flag 15](#-flag-15)
-  - [🚩 Flag 16](#-flag-16)
-  - [🚩 Flag 17](#-flag-17)
-  - [🚩 Flag 18](#-flag-18)
-  - [🚩 Flag 19](#-flag-19)
-  - [🚩 Flag 21](#-flag-21)
-  - [🚩 Flag 22](#-flag-22)
-  - [🚩 Flag 23](#-flag-23)
-  - [🚩 Flag 24](#-flag-24)
-  - [🚩 Flag 25](#-flag-25)
-  - [🚩 Flag 26](#-flag-26)
+   - [🚩 Flag 1 – Lateral Movement via SSH](#-flag-1)
+  - [🚩 Flag 2 – Lateral Movement Source Identification](#-flag-2)
+  - [🚩 Flag 3 – Compromised Backup Administrative Account](#-flag-3)
+  - [🚩 Flag 4 – Backup Directory Enumeration](#-flag-4)
+  - [🚩 Flag 5 – Backup File Search (Archive Discovery)](#-flag-5)
+  - [🚩 Flag 6 – Local Account Enumeration](#-flag-6)
+  - [🚩 Flag 7 – Scheduled Job Reconnaissance](#-flag-7)
+  - [🚩 Flag 8 – External Tool Transfer to Backup Server](#-flag-8)
+  - [🚩 Flag 9 – Credential Harvesting from Backup Configuration](#-flag-9)
+  - [🚩 Flag 10 – Backup Data Destruction](#-flag-10)
+  - [🚩 Flag 11 – Backup Scheduling Service Stopped](#-flag-11)
+  - [🚩 Flag 12 – Backup Scheduling Service Disabled](#-flag-12)
+  - [🚩 Flag 13 – Remote Execution Using PsExec](#-flag-13)
+  - [🚩 Flag 14 – Payload Deployment via PsExec](#-flag-14)
+  - [🚩 Flag 15 – Malicious Payload Execution](#-flag-15)
+  - [🚩 Flag 16 – Volume Shadow Copy Service Stopped](#-flag-16)
+  - [🚩 Flag 17 – Windows Backup Engine Stopped](#-flag-17)
+  - [🚩 Flag 18 – Forced Termination of Database Service](#-flag-18)
+  - [🚩 Flag 19 – Volume Shadow Copy Deletion](#-flag-19)
+  - [🚩 Flag 21 – Windows Recovery Environment Disabled](#-flag-21)
+  - [🚩 Flag 22 – Backup Catalog Deletion](#-flag-22)
+  - [🚩 Flag 23 – Registry Autorun Persistence Established](#-flag-23)
+  - [🚩 Flag 24 – Scheduled Task Persistence Established](#-flag-24)
+  - [🚩 Flag 25 – NTFS USN Journal Deletion](#-flag-25)
+  - [🚩 Flag 26 – Ransom Note Creation](#-flag-26)
 - [🚨 Detection Gaps & Recommendations](#-detection-gaps--recommendations)
 - [🧾 Final Assessment](#-final-assessment)
 - [📎 Analyst Notes](#-analyst-notes)
@@ -78,7 +77,7 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 ## 🧠 Hunt Overview
 
-<High-level narrative describing the attack lifecycle, key behaviors observed, and why this hunt matters.>
+This hunt traces the final phase of a credential-based ransomware attack from lateral movement into backup infrastructure through discovery, credential abuse, tool transfer, recovery suppression, and impact. The attacker demonstrated clear knowledge of the environment, prioritizing backup systems and recovery mechanisms to ensure encryption would be irreversible. Rather than relying on exploits, the intrusion abused legitimate credentials and native system utilities, allowing malicious activity to blend into normal administrative behavior. This hunt highlights how low-noise actions, when correlated, reveal a complete ransomware kill chain and expose critical detection gaps prior to impact.
 
 ---
 
@@ -86,26 +85,32 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 | Flag | Technique Category | MITRE ID | Priority |
 |-----:|-------------------|----------|----------|
-| 1 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 2 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 3 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 4 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 5 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 6 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 7 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 8 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 9 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 10 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 11 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 12 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 13 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 14 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 15 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 16 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 17 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 18 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 19 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 20 | <Placeholder> | <Placeholder> | <Placeholder> |
+| 1 | Lateral Movement – Remote Services (SSH) | T1021.004 | High |
+| 2 | Lateral Movement – Source Attribution | T1021 | Medium |
+| 3 | Credential Access – Valid Accounts | T1078.002 | High |
+| 4 | Discovery – File and Directory Discovery | T1083 | High |
+| 5 | Discovery – File Search | T1083 | Medium |
+| 6 | Discovery – Account Discovery | T1087 | Medium |
+| 7 | Discovery – Scheduled Task/Job Discovery | T1053.003 | Medium |
+| 8 | Command and Control – Ingress Tool Transfer | T1105 | High |
+| 9 | Credential Access – Credentials from Password Stores | T1555 | High |
+| 10 | Impact – Data Destruction | T1485 | Critical |
+| 11 | Impact – Service Stop | T1489 | High |
+| 12 | Impact – Modify System Services | T1543 | High |
+| 13 | Lateral Movement – Remote Execution | T1021.002 | High |
+| 14 | Lateral Movement – Remote Execution (PsExec) | T1021 | High |
+| 15 | Execution – Malicious Payload Execution | T1059 | Critical |
+| 16 | Impact – Inhibit System Recovery | T1490 | Critical |
+| 17 | Impact – Inhibit System Recovery | T1490 | Critical |
+| 18 | Defense Evasion – Process Termination | T1489 | High |
+| 19 | Impact – Inhibit System Recovery | T1490 | Critical |
+| 20 | Impact – Inhibit System Recovery (Storage Limitation) | T1490 | Critical |
+| 21 | Impact – Inhibit System Recovery (Recovery Disabled) | T1490 | Critical |
+| 22 | Impact – Inhibit System Recovery (Backup Catalog Deletion) | T1490 | Critical |
+| 23 | Persistence – Registry Run Keys / Startup Folder | T1547.001 | High |
+| 24 | Persistence – Scheduled Task/Job | T1053.005 | High |
+| 25 | Defense Evasion – Indicator Removal on Host | T1070 | High |
+| 26 | Impact – Data Encrypted for Impact (Ransom Note) | T1486 | Critical |
 
 ---
 
@@ -1259,14 +1264,17 @@ SILENTLYNX_README.txt
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
+| Host | azuki-adminpc, azuki-sl |
 | Timestamp | 2025-11-25T06:05:01.1043756Z |
-| Process | <Placeholder> |
-| Parent Process | powershell.exe |
-| Command Line | <Placeholder> |
+| ActionType | FileCreated |
+| FileName | SILENTLYNX_README.txt |
+| FolderPath | C:\Users\yuki.tanaka\Desktop\ (also Documents\, multiple hosts) |
+| Process | silentlynx.exe |
+| Parent Process | silentlynx.exe |
+| Command Line | silentlynx.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with Data Encrypted for Impact (MITRE ATT&CK T1486). The creation of a ransom note confirms that the attacker has completed the primary destructive actions and is transitioning to extortion. At this stage, recovery options have already been intentionally degraded or eliminated, and the attacker’s goal is no longer access or disruption but coercion. Detection here indicates the attack has reached its terminal phase.
 
 ### 🔧 KQL Query Used
 DeviceFileEvents
@@ -1283,7 +1291,7 @@ DeviceFileEvents
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Monitor for the creation of ransom note files (e.g., *_README.txt) across multiple directories and endpoints within a short timeframe. Correlate file creation with suspicious process execution, encryption activity, and recovery-inhibiting behavior. Treat widespread ransom note creation as a confirmed ransomware incident requiring immediate incident response and containment.
 
 </details>
 <!-- Duplicate Flag 1 section for Flags 2–20 -->
@@ -1293,27 +1301,35 @@ DeviceFileEvents
 ## 🚨 Detection Gaps & Recommendations
 
 ### Observed Gaps
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+- Limited detection of credential misuse and lateral movement: The attacker was able to authenticate and move laterally using valid credentials without triggering early alerts, indicating insufficient monitoring of privileged account usage and internal SSH/remote execution activity.
+- Insufficient visibility into backup infrastructure activity: Multiple discovery and destructive actions against backup systems (enumeration, deletion, service stoppage) occurred without effective prevention, highlighting weak controls around critical recovery assets.
+- Delayed detection of impact-stage behavior: Several high-confidence ransomware indicators (backup deletion, recovery suppression, service termination) were only observable after significant damage had already occurred, reducing the opportunity for effective response.
 
 ### Recommendations
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+- Strengthen monitoring of privileged accounts and internal remote access: Implement alerting for interactive use of administrative and backup-related accounts, especially when originating from user workstations or accessing sensitive infrastructure.
+- Harden and isolate backup and recovery systems: Restrict interactive access to backup servers, enforce immutable backups where possible, and closely monitor for destructive commands targeting backup directories, services, and recovery mechanisms.
+- Improve correlation and escalation for ransomware precursors: Prioritize alerts that chain lateral movement, discovery, tool transfer, and recovery suppression activity, enabling faster SOC escalation before impact actions are completed.
 
 ---
 
 ## 🧾 Final Assessment
 
-<Concise executive-style conclusion summarizing risk, attacker sophistication, and defensive posture.>
+The Azuki incident represents a deliberate, end-to-end ransomware operation, not an opportunistic intrusion. Analysis of Microsoft Defender for Endpoint telemetry shows the attackers already possessed valid credentials and leveraged trusted administrative tooling to move laterally from a compromised workstation into the organization’s backup infrastructure. From there, they conducted targeted reconnaissance to identify backup locations, recovery mechanisms, and privileged services before executing coordinated impact actions.
+
+Once inside the backup environment, the attackers systematically eliminated recovery options. Backup directories were enumerated and deleted, backup and scheduling services were stopped and disabled, Volume Shadow Copies were deleted and constrained, and Windows recovery features were explicitly turned off. These actions ensured that even partial restoration attempts would fail. The use of native system utilities (rm, vssadmin, wbadmin, bcdedit, fsutil) allowed the attackers to blend into normal administrative activity while achieving irreversible damage.
+
+Ransomware deployment and propagation were accelerated through remote execution tooling and credential reuse, enabling the payload to be distributed across multiple systems in rapid succession. The creation of ransom notes on all affected hosts confirms that encryption and extortion were the final objectives, executed only after recovery mechanisms had been neutralized. At this stage, defender options were limited to containment and incident response rather than prevention.
+
+In summary, the attackers reached the backup infrastructure through credential-based lateral movement, destroyed both data and recovery capabilities in a calculated sequence, and spread ransomware quickly using legitimate administrative tools. While endpoint telemetry captured each stage of the attack, detection occurred largely after the attackers had achieved strategic objectives, leaving the organization with minimal recovery options. This incident highlights the critical need for earlier detection of credential misuse, stricter controls around backup systems, and faster SOC escalation when pre-impact ransomware behaviors are observed.
 
 ---
 
 ## 📎 Analyst Notes
 
-- Report structured for interview and portfolio review  
-- Evidence reproducible via advanced hunting  
-- Techniques mapped directly to MITRE ATT&CK  
+- This report was structured to mirror a real SOC threat-hunting investigation, with each flag representing a distinct attacker behavior observed in Microsoft Defender for Endpoint telemetry.
+- All findings are evidence-based and reproducible using Microsoft Defender Advanced Hunting queries included in the report. No assumptions were made beyond what is supported by logged activity.
+- The investigation emphasizes attacker progression and intent over isolated alerts, demonstrating how individual low-signal events chain together into a full ransomware kill chain.
+- MITRE ATT&CK mappings are included to contextualize behaviors within a standard framework, but conclusions are driven by observed activity rather than framework alignment alone.
+- This report is intended for technical review and interview discussion, highlighting investigative reasoning, tradecraft recognition, and detection gaps rather than tool-specific alerting. 
 
 ---
