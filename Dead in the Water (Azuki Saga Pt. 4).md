@@ -22,10 +22,10 @@ This threat hunt investigated a full ransomware intrusion within the Azuki Logis
 ---
 
 ## 🎯 Hunt Objectives
+- Identify and reconstruct a credential-based ransomware intrusion using Microsoft Defender for Endpoint telemetry
+- Correlate attacker behaviors across discovery, lateral movement, and impact phases to MITRE ATT&CK techniques
+- Document evidence, detection gaps, and response opportunities prior to ransomware deployment and recovery suppression
 
-- Identify malicious activity across endpoints and network telemetry  
-- Correlate attacker behavior to MITRE ATT&CK techniques  
-- Document evidence, detection gaps, and response opportunities  
 
 ---
 
@@ -34,7 +34,8 @@ This threat hunt investigated a full ransomware intrusion within the Azuki Logis
 - **Environment:** Azuki Logistics corporate Windows and Linux environment, including user workstations and backup infrastructure  
 - **Data Sources:** Microsoft Defender for Endpoint (Advanced Hunting telemetry: DeviceProcessEvents, DeviceNetworkEvents, DeviceFileEvents, DeviceRegistryEvents)  
 - **Timeframe:** 2025-11-24 → 2025-11-25  
-- **Link:** https://docs.google.com/forms/d/e/1FAIpQLSdGLxM71I2kXx4L9MhB6ipWMKCDXJxJRjXTNg_3gK1SkDmQ8g/viewform
+- **Threat Hunt Intake Form:** [Azuki Ransomware Scenario – Google Form](https://docs.google.com/forms/d/e/1FAIpQLSdGLxM71I2kXx4L9MhB6ipWMKCDXJxJRjXTNg_3gK1SkDmQ8g/viewform)
+
 ![Uploading image.png…]()
 
 ---
