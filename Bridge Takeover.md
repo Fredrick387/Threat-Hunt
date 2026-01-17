@@ -17,6 +17,7 @@ Microsoft Defender for Endpoint logs
 
 **Query Starting Point**
 Starting Point: Nov-24
+https://docs.google.com/forms/d/e/1FAIpQLSf5PNshNzWJbp54MlIRONDzf6wpFKlydHF-KN54_NLeX1n7Iw/viewform
 
 ```kql
 DeviceLogonEvents
