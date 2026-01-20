@@ -490,7 +490,8 @@ DeviceRegistryEvents
 ```
 
 ### 🖼️ Screenshot
-![Uploading image.png…]()
+<img width="1498" height="163" alt="image" src="https://github.com/user-attachments/assets/736ee004-7b51-4180-9697-113dd744ef53" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -505,6 +506,63 @@ This mindset helps uncover persistence even when attackers intentionally “hide
 </details>
 ---
 
+<details>
+<summary id="-flag-10">🚩 <strong>Flag 10: Registry-Based Ephemeral Persistence (Run Key)</strong></summary>
+
+### 🎯 Objective
+Establish short-lived persistence by ensuring malicious code executes on the next system startup or user logon, then remove evidence to evade detection.
+
+### 📌 Finding
+A registry value was written to the Windows Run key pointing to a PowerShell script associated with the suspicious maintenance activity. The value was intended to trigger execution once during startup or logon and was later removed, consistent with ephemeral persistence behavior.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-25T04:24:48.895Z |
+| Process | powershell.exe |
+| Parent Process | <Placeholder> |
+| Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Registry.ps1 |
+| Registry Key | HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run |
+| Registry Value Name | MaintenanceRunner |
+| Initiating Account | ops.maintenance |
+
+### 💡 Why it matters
+Registry Run keys are a classic Windows persistence mechanism that execute automatically on startup or logon.  
+The create-and-delete pattern observed here indicates **ephemeral persistence**, designed to survive a reboot or disruption while minimizing forensic footprint.  
+
+This behavior maps to **MITRE ATT&CK T1547.001 – Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder** and is commonly used once attackers already have execution and beaconing established.
+
+Importantly, attackers often deploy this *before* noisy actions like exfiltration to ensure re-entry if access is lost.
+
+### 🔧 KQL Query Used
+let startTime = datetime(2025-11-21T00:00:00Z);
+let endTime = datetime(2025-12-15T23:59:59Z);
+DeviceRegistryEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == "ch-ops-wks02"
+| where RegistryKey contains "run"
+| project TimeGenerated, DeviceName, ActionType, RegistryValueName, RegistryKey, InitiatingProcessAccountName, InitiatingProcessCommandLine
+
+### 🖼️ Screenshot
+<img width="1006" height="219" alt="image" src="https://github.com/user-attachments/assets/efb2431e-9e1f-4839-82ca-5c09ad7813cc" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When investigating suspicious scripts or maintenance tooling, pivot from execution into **registry activity tied to the same script or command line**.  
+Specifically:
+- Search for RegistryValueSet events under Run keys
+- Correlate timing with script execution or network beaconing
+- Remember that persistence actions may be executed under SYSTEM or service accounts, not attacker usernames
+
+Ephemeral persistence often appears subtle — look for **short-lived registry changes near suspicious activity windows**, not long-standing autoruns.
+
+</details>
+
+---
 
 
 <details>
