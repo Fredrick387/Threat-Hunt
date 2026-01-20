@@ -109,10 +109,10 @@ _All flags below are collapsible for readability._
 <summary id="-flag-1">🚩 <strong>Flag 1: Execution – Suspicious Maintenance Script</strong></summary>
 
 ### 🎯 Objective
-Blend malicious activity into routine maintenance to avoid detection and establish an initial execution foothold.
+Gain initial execution on the endpoint by masquerading malicious activity as legitimate system maintenance.
 
 ### 📌 Finding
-A PowerShell maintenance script appeared on only one workstation and executed during off-hours, outside normal maintenance cycles.
+A PowerShell-based maintenance script executed during off-hours on a single workstation and was not observed across peer systems.
 
 ### 🔍 Evidence
 
@@ -125,31 +125,34 @@ A PowerShell maintenance script appeared on only one workstation and executed du
 | Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
 
 ### 💡 Why it matters
-Attackers often masquerade malicious scripts as maintenance tasks to evade scrutiny. This aligns with MITRE ATT&CK **T1059.001 – Command and Scripting Interpreter: PowerShell** and represents the initial execution stage of the attack.
+Attackers frequently abuse trusted maintenance mechanisms to blend malicious execution into normal operations. A **host-unique script**, running **outside business hours**, with **PowerShell execution policy bypass**, strongly aligns with **MITRE ATT&CK T1059.001 (PowerShell)** and represents an early execution foothold that can enable follow-on actions.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Baseline approved maintenance scripts across endpoints and alert on scripts that execute on a single host or outside approved maintenance windows.
+When you find a suspicious script, treat it as your **primary pivot**:
+- Search for all executions of the script across time
+- Compare presence across other endpoints to establish uniqueness
+- Off-hours execution + uniqueness is sufficient to justify deeper hunting, even without a formal baseline
 
 </details>
 
 ---
 
 <details>
-<summary id="-flag-2">🚩 <strong>Flag 2: Command and Control – Initial Beacon</strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag 2: Command and Control – Initial Beacon Attempt</strong></summary>
 
 ### 🎯 Objective
-Test outbound connectivity and establish a command-and-control (C2) communication channel.
+Test outbound connectivity and signal presence to attacker-controlled infrastructure.
 
 ### 📌 Finding
-The suspicious maintenance script initiated outbound network communication during off-hours.
+The maintenance script initiated outbound network activity inconsistent with standard internal update or telemetry behavior.
 
 ### 🔍 Evidence
 
@@ -162,18 +165,21 @@ The suspicious maintenance script initiated outbound network communication durin
 | Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
 
 ### 💡 Why it matters
-Early beaconing confirms attacker control and shifts the incident from “suspicious activity” to active compromise. This maps to **T1071.001 – Application Layer Protocol: Web Protocols**.
+Outbound network traffic originating from a maintenance script indicates the script is **active logic**, not a passive task. This marks the transition from execution to **command-and-control behavior**, aligning with **MITRE ATT&CK T1071 (Application Layer Protocol)**.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Monitor network events where PowerShell or scripts initiate outbound connections, especially during off-hours.
+Once a suspicious script is identified:
+- Pivot immediately to network events where the **initiating process or command line contains the script**
+- Do not restrict time ranges too aggressively—attackers often retry over days
+- At this stage, *any* outbound connection is suspicious, regardless of destination reputation
 
 </details>
 
@@ -183,34 +189,37 @@ Monitor network events where PowerShell or scripts initiate outbound connections
 <summary id="-flag-3">🚩 <strong>Flag 3: Command and Control – Beacon Destination</strong></summary>
 
 ### 🎯 Objective
-Reach a listening service to exchange instructions or data.
+Establish a communication channel to receive instructions or deliver staged data.
 
 ### 📌 Finding
-The compromised host attempted to connect to a local listener masquerading as a benign service.
+The script attempted repeated connections to a specific IP and port combination.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | ch-ops-wks02 |
-| Timestamp | 2025-11-23T03:46:08.400686Z |
+| Timestamp | <Placeholder> |
 | Process | powershell.exe |
 | Parent Process | MaintenanceRunner_Distributed.ps1 |
 | Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
 
 ### 💡 Why it matters
-Localhost beacons are often used to proxy traffic or stage internal C2. This aligns with **T1090 – Proxy** and **T1071 – Command and Control**.
+Identifying the beacon destination provides the first **off-host indicator of compromise**. Even loopback or internal destinations can represent proxies or staging listeners. This behavior maps to **MITRE ATT&CK T1071 (C2)** and **T1090 (Proxy)**.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Alert on unexpected connections to localhost ports initiated by scripts or non-service binaries.
+After confirming outbound activity:
+- Group network events by RemoteIP and RemotePort
+- Look for repetition and consistency over time
+- Avoid assuming all C2 must be external—early-stage infrastructure is often local or indirect
 
 </details>
 
@@ -220,10 +229,10 @@ Alert on unexpected connections to localhost ports initiated by scripts or non-s
 <summary id="-flag-4">🚩 <strong>Flag 4: Command and Control – Successful Beacon</strong></summary>
 
 ### 🎯 Objective
-Confirm stable communication with the C2 channel.
+Achieve reliable two-way communication with attacker infrastructure.
 
 ### 📌 Finding
-A successful outbound connection occurred days after initial attempts, indicating persistent retry behavior.
+A successful outbound connection was eventually established after multiple attempts across several days.
 
 ### 🔍 Evidence
 
@@ -236,18 +245,22 @@ A successful outbound connection occurred days after initial attempts, indicatin
 | Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
 
 ### 💡 Why it matters
-Delayed but successful C2 connections indicate persistence and patience, consistent with **T1071 – Command and Control** and **T1021 – Remote Services (indirect control)**.
+The first successful beacon represents the point where the attacker likely gained interactive control. This timestamp anchors the attack timeline and aligns with **MITRE ATT&CK T1071 (Command and Control)**.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Track repeated failed connection attempts followed by a success to identify long-lived beacons.
+Always identify:
+- First attempt
+- First successful connection
+- Most recent successful connection  
+Attackers often retry quietly over long periods—narrow time windows will cause missed detections.
 
 </details>
 
@@ -257,71 +270,77 @@ Track repeated failed connection attempts followed by a success to identify long
 <summary id="-flag-5">🚩 <strong>Flag 5: Collection – Data Staging</strong></summary>
 
 ### 🎯 Objective
-Prepare internal data for later analysis or exfiltration.
+Prepare internal data for review, filtering, or later exfiltration while remaining low-noise.
 
 ### 📌 Finding
-A diagnostic CSV file was created in an unusual CorpHealth diagnostics directory.
+A structured diagnostic file was created in a CorpHealth diagnostics directory not typically used for ad-hoc exports.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | ch-ops-wks02 |
-| Timestamp | <From logs> |
+| Timestamp | <Placeholder> |
 | Process | powershell.exe |
 | Parent Process | MaintenanceRunner_Distributed.ps1 |
-| Command Line | <Associated PowerShell command> |
+| Command Line | <Placeholder> |
 
 ### 💡 Why it matters
-Staging data locally is a precursor to exfiltration. This aligns with **T1074.001 – Data Staged: Local Data Staging**.
+Local data staging is a precursor to exfiltration and allows attackers to curate exactly what they want to steal. This aligns with **MITRE ATT&CK T1074.001 (Local Data Staging)**. Exfiltration is noisy—attackers often stage and validate data first.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Alert on file creation in diagnostic or operational folders by scripts or interactive PowerShell sessions.
+Once C2 is confirmed:
+- Pivot to **file creation events where the initiating process or command line matches the script**
+- Focus on diagnostics, ProgramData, and temp directories
+- Structured formats (CSV, JSON, XML) are common staging artifacts
 
 </details>
 
 ---
 
 <details>
-<summary id="-flag-6">🚩 <strong>Flag 6: Collection – File Integrity Verification</strong></summary>
+<summary id="-flag-6">🚩 <strong>Flag 6: Collection – File Integrity Handling</strong></summary>
 
 ### 🎯 Objective
-Preserve or validate collected data before further use.
+Validate, track, or preserve staged data prior to further processing.
 
 ### 📌 Finding
-The staged diagnostic file had a recorded SHA-256 hash, indicating deliberate handling.
+Hash metadata was recorded for the staged file, indicating deliberate handling rather than incidental creation.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | ch-ops-wks02 |
-| Timestamp | <From logs> |
+| Timestamp | <Placeholder> |
 | Process | powershell.exe |
 | Parent Process | MaintenanceRunner_Distributed.ps1 |
-| Command Line | <Associated PowerShell command> |
+| Command Line | <Placeholder> |
 
 ### 💡 Why it matters
-Hashing indicates controlled data handling, aligning with **T1560 – Archive Collected Data** and **T1074 – Data Staging** behaviors.
+Hash awareness demonstrates attacker discipline and supports **MITRE ATT&CK T1074 (Data Staging)** and **T1560 (Prepare Data)**. This suggests the data is intended for reuse, comparison, or exfiltration.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Correlate file creation with hash calculation or metadata access to identify deliberate staging.
+After identifying one staged file:
+- Search for other files with similar names or sizes
+- Compare hashes to identify working copies or iterations
+- Assume attackers rarely rely on a single artifact
 
 </details>
 
@@ -331,34 +350,37 @@ Correlate file creation with hash calculation or metadata access to identify del
 <summary id="-flag-7">🚩 <strong>Flag 7: Collection – Alternate Staging Location</strong></summary>
 
 ### 🎯 Objective
-Maintain redundant or working copies of staged data.
+Maintain a secondary or intermediate working copy of collected data.
 
 ### 📌 Finding
-A second inventory CSV with a different hash was created in a user Temp directory.
+A second, similarly named file with a different hash was created in a user temp directory.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | ch-ops-wks02 |
-| Timestamp | <From logs> |
+| Timestamp | <Placeholder> |
 | Process | powershell.exe |
 | Parent Process | MaintenanceRunner_Distributed.ps1 |
-| Command Line | <Associated PowerShell command> |
+| Command Line | <Placeholder> |
 
 ### 💡 Why it matters
-Multiple staged copies suggest manual processing and preparation, consistent with **T1074.001 – Local Data Staging** and advanced attacker tradecraft.
+Multiple near-identical files across directories indicate manual interaction or iterative processing, reinforcing attacker presence. This aligns with **MITRE ATT&CK T1074.001 (Local Data Staging)**.
 
 ### 🔧 KQL Query Used
-<Paste KQL here>
+<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<Placeholder – insert screenshot>
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-Look for similar filenames with different hashes across multiple directories as an indicator of attacker working copies.
+When you find one staging artifact:
+- Assume there are more
+- Expand searches to user temp paths and alternate operational directories
+- Let naming patterns guide additional pivots, not just exact matches
 
 </details>
 
