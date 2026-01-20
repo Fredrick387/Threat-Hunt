@@ -257,7 +257,7 @@ The first successful beacon represents the point where the attacker likely gaine
 
 ### 🖼️ Screenshot
 
-![Uploading image.png…]()
+<img width="948" height="303" alt="image" src="https://github.com/user-attachments/assets/27c3ea89-93be-4655-9962-bfd5ab38c330" />
 
 
 ### 🛠️ Detection Recommendation
@@ -399,7 +399,113 @@ When you find one staging artifact:
 </details>
 
 
+
 ---
+
+<details>
+<summary id="-flag-8">🚩 <strong>Flag 8: Credential Access – Suspicious Registry Modification</strong></summary>
+
+### 🎯 Objective
+Inspect or manipulate system-level configuration in preparation for credential access, token harvesting, or follow-on persistence.
+
+### 📌 Finding
+A PowerShell script associated with the suspicious maintenance activity created a new registry key under the system EventLog service path. This action is anomalous for standard CorpHealth maintenance behavior and occurred shortly after data staging activity, indicating intentional system inspection or tampering.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-25T04:14:40.985Z |
+| Process | powershell.exe |
+| Parent Process | cmd.exe |
+| Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
+| Registry Key | HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Services\EventLog\Application\CorpHealthAgent |
+| Token Elevation | TokenElevationTypeFull |
+| Initiating User | ops.maintenance |
+
+### 💡 Why it matters
+Registry interaction at the **HKLM\SYSTEM** level requires elevated privileges and is rarely necessary for routine diagnostics. Modifying EventLog service paths can support **credential harvesting simulations**, log manipulation, or preparation for stealthy persistence. This activity aligns with **MITRE ATT&CK T1003 (Credential Access)** and **T1112 (Modify Registry)**, indicating the attacker is exploring how to maintain authenticated access beyond the current script execution.
+
+### 🔧 KQL Query Used
+let startTime = datetime(2025-11-23T00:00:00Z);
+let endTime = datetime(2025-11-27T23:59:59Z);
+DeviceRegistryEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where InitiatingProcessCommandLine contains ".ps1"
+| project TimeGenerated, ActionType, RegistryKey, RegistryValueData, RegistryValueName, RegistryValueType,  DeviceName, InitiatingProcessAccountName, InitiatingProcessCommandLine, InitiatingProcessParentFileName, InitiatingProcessTokenElevation, InitiatingProcessFolderPath
+
+### 🖼️ Screenshot
+<img width="1418" height="165" alt="image" src="https://github.com/user-attachments/assets/2017a335-757d-4a7e-9165-b7bb388c4e41" />
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When you see suspicious data staging followed by registry activity:
+- Pivot to **DeviceRegistryEvents** where the **initiating process or command line matches the original script**
+- Prioritize **HKLM\SYSTEM** and **Services** paths—these imply elevated access
+- Think defensively: attackers often check *“Can I come back later without re-running this script?”* before attempting noisy actions like exfiltration
+
+</details>
+
+---
+
+<details>
+<summary id="-flag-9">🚩 <strong>Flag 9: Scheduled Task Persistence</strong></summary>
+
+### 🎯 Objective
+Establish persistence on the compromised host by creating a scheduled task that can execute attacker-controlled code under a privileged context (SYSTEM), ensuring continued access even if the original script is removed.
+
+### 📌 Finding
+A new scheduled task was created on **ch-ops-wks02** that does not align with standard CorpHealth maintenance behavior.  
+The task registration occurred via the Windows Task Scheduler service, which operates as SYSTEM, indicating that the attacker leveraged delegated or borrowed SYSTEM execution rather than an interactive SYSTEM login.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-30T00:13:54.526Z |
+| Registry Key | HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\CorpHealth_52D6CA |
+| Initiating Account | system |
+| Initiating Process | svchost.exe |
+| Command Line | svchost.exe -k netsvcs -p |
+
+### 💡 Why it matters
+Scheduled tasks are a common and durable persistence mechanism (**MITRE ATT&CK: T1053.005 – Scheduled Task/Job: Scheduled Task**).  
+The key insight here is that **the creator of the task does not need to be SYSTEM**. By abusing trusted management tooling or services, an attacker can cause SYSTEM to register and run the task on their behalf.  
+This allows persistence that blends in with legitimate administrative activity and complicates attribution, since logs show SYSTEM as the actor rather than the original compromised user.
+
+### 🔧 KQL Query Used
+```
+let startTime = datetime(2025-11-21T00:00:00Z);
+let endTime = datetime(2025-12-15T23:59:59Z);
+DeviceRegistryEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == "ch-ops-wks02"
+| where RegistryKey contains "sch"
+| where ActionType in ("RegistryKeyCreated","RegistryValueSet")
+| project TimeGenerated, DeviceName, RegistryValueName, RegistryKey, InitiatingProcessAccountName, InitiatingProcessCommandLine
+```
+
+### 🖼️ Screenshot
+![Uploading image.png…]()
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When hunting for scheduled-task persistence, do not filter only on the suspected user account.  
+Instead:
+- Search **DeviceRegistryEvents** for keys under `Schedule\TaskCache\Tree`
+- Correlate task creation times with earlier suspicious scripts or processes
+- Remember that **SYSTEM in the logs may simply be the service executing the request**, not the original attacker  
+This mindset helps uncover persistence even when attackers intentionally “hide behind” SYSTEM.
+
+</details>
+---
+
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
