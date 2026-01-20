@@ -128,10 +128,11 @@ A PowerShell-based maintenance script executed during off-hours on a single work
 Attackers frequently abuse trusted maintenance mechanisms to blend malicious execution into normal operations. A **host-unique script**, running **outside business hours**, with **PowerShell execution policy bypass**, strongly aligns with **MITRE ATT&CK T1059.001 (PowerShell)** and represents an early execution foothold that can enable follow-on actions.
 
 ### 🔧 KQL Query Used
-<Placeholder – add KQL>
+
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+<img width="772" height="288" alt="image" src="https://github.com/user-attachments/assets/983d6b17-db05-4329-8a1d-22b1842a1e88" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -168,10 +169,22 @@ The maintenance script initiated outbound network activity inconsistent with sta
 Outbound network traffic originating from a maintenance script indicates the script is **active logic**, not a passive task. This marks the transition from execution to **command-and-control behavior**, aligning with **MITRE ATT&CK T1071 (Application Layer Protocol)**.
 
 ### 🔧 KQL Query Used
-<Placeholder – add KQL>
+```
+let anchorTime = datetime(2025-11-25T04:15:21Z);
+let startTime = anchorTime - 15d;
+let endTime = anchorTime + 15d;
+let device = "ch-ops-wks02";
+DeviceNetworkEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == device
+| project TimeGenerated, ActionType, InitiatingProcessFileName,
+InitiatingProcessCommandLine, RemoteIP, RemotePort, Protocol
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+<img width="781" height="116" alt="image" src="https://github.com/user-attachments/assets/bb1e1e9c-e12e-4642-a10e-98d50ae00664" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -207,12 +220,6 @@ The script attempted repeated connections to a specific IP and port combination.
 ### 💡 Why it matters
 Identifying the beacon destination provides the first **off-host indicator of compromise**. Even loopback or internal destinations can represent proxies or staging listeners. This behavior maps to **MITRE ATT&CK T1071 (C2)** and **T1090 (Proxy)**.
 
-### 🔧 KQL Query Used
-<Placeholder – add KQL>
-
-### 🖼️ Screenshot
-<Placeholder – insert screenshot>
-
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
@@ -247,11 +254,11 @@ A successful outbound connection was eventually established after multiple attem
 ### 💡 Why it matters
 The first successful beacon represents the point where the attacker likely gained interactive control. This timestamp anchors the attack timeline and aligns with **MITRE ATT&CK T1071 (Command and Control)**.
 
-### 🔧 KQL Query Used
-<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+
+![Uploading image.png…]()
+
 
 ### 🛠️ Detection Recommendation
 
@@ -289,10 +296,19 @@ A structured diagnostic file was created in a CorpHealth diagnostics directory n
 Local data staging is a precursor to exfiltration and allows attackers to curate exactly what they want to steal. This aligns with **MITRE ATT&CK T1074.001 (Local Data Staging)**. Exfiltration is noisy—attackers often stage and validate data first.
 
 ### 🔧 KQL Query Used
-<Placeholder – add KQL>
+```
+let device = "ch-ops-wks02";
+DeviceFileEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == device
+| where ActionType in ("FileCreated","FileModified","FileCopied")
+| project TimeGenerated, ActionType, FileName, FolderPath, InitiatingProcessFileName
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+<img width="1089" height="138" alt="image" src="https://github.com/user-attachments/assets/4a80caca-d518-4d62-9481-77618a07de54" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -328,11 +344,10 @@ Hash metadata was recorded for the staged file, indicating deliberate handling r
 ### 💡 Why it matters
 Hash awareness demonstrates attacker discipline and supports **MITRE ATT&CK T1074 (Data Staging)** and **T1560 (Prepare Data)**. This suggests the data is intended for reuse, comparison, or exfiltration.
 
-### 🔧 KQL Query Used
-<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+<img width="1093" height="210" alt="image" src="https://github.com/user-attachments/assets/973312b2-900a-4732-8169-8d85e3d75c70" />
+
 
 ### 🛠️ Detection Recommendation
 
@@ -368,11 +383,10 @@ A second, similarly named file with a different hash was created in a user temp 
 ### 💡 Why it matters
 Multiple near-identical files across directories indicate manual interaction or iterative processing, reinforcing attacker presence. This aligns with **MITRE ATT&CK T1074.001 (Local Data Staging)**.
 
-### 🔧 KQL Query Used
-<Placeholder – add KQL>
 
 ### 🖼️ Screenshot
-<Placeholder – insert screenshot>
+<img width="1093" height="196" alt="image" src="https://github.com/user-attachments/assets/ffeb05d6-4fee-40e0-bb0c-6f248b6d72d9" />
+
 
 ### 🛠️ Detection Recommendation
 
