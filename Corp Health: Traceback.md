@@ -566,6 +566,53 @@ Ephemeral persistence often appears subtle — look for **short-lived registry c
 
 ---
 
+<details>
+<summary id="-flag-11">🚩 <strong>Flag 11: Privilege Escalation – Application-Level Capability Probe</strong></summary>
+
+### 🎯 Objective
+Assess whether the executing process has the capability to perform privileged actions by probing application-level configuration and privilege boundaries without performing a successful escalation.
+
+### 📌 Finding
+A PowerShell command executed on **ch-ops-wks02** explicitly triggered an application-level configuration adjustment event associated with a simulated privilege escalation check. The activity indicates **capability probing**, not confirmed privilege escalation.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:47:21.852Z |
+| Process | powershell.exe |
+| Executing User | ops.maintenance |
+| ActionType | PowerShellCommand |
+| Command | `$tok=$FlagMap["PrivEsc-Sim"]; Log "Config Adjust: application event"` |
+
+### 💡 Why it matters
+Privilege escalation frequently begins with **non-destructive capability testing** rather than immediate exploitation. This event represents an explicit attempt to determine whether higher-privileged actions are possible from the current execution context.
+
+Unlike registry-based persistence or token modification, this activity occurs entirely at the **application logic level**, reinforcing that:
+- Telemetry reflects **intent and probing**, not outcome
+- Privilege escalation attempts may not produce durable system changes
+- Early-stage probes often precede credential access, persistence, or exfiltration
+
+This behavior aligns with **MITRE ATT&CK TA0004 (Privilege Escalation)** and reflects attacker tradecraft designed to validate access boundaries before committing to riskier actions.
+
+### 🔧 KQL Query Used
+<placeholder>
+
+### 🖼️ Screenshot
+<placeholder>
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+Do not rely solely on registry or process-creation telemetry to identify privilege escalation. Incorporate **application-level PowerShell telemetry** that captures:
+- Capability testing
+- Privilege boundary checks
+- Simulated escalation logic
+
+Early identification of probing behavior enables detection **before** escalation succeeds, persistence is established, or sensitive data is accessed.
+
+</details>
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
