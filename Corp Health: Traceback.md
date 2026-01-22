@@ -707,6 +707,54 @@ When investigating suspicious scripts, always check for PowerShell executions us
 
 </details>
 
+<details>
+<summary id="-flag-14">🚩 <strong>Flag 14: Privilege Escalation – Token Manipulation</strong></summary>
+
+### 🎯 Objective
+Adjust process token privileges to elevate execution context or blend malicious activity with higher-privilege processes.
+
+### 📌 Finding
+Windows recorded a `ProcessPrimaryTokenModified` event originating from a PowerShell process tied directly to the suspicious maintenance script. This indicates the attacker attempted to modify the primary access token of a running process — a common privilege escalation and evasion technique.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-25T04:14:07.058Z |
+| ActionType | ProcessPrimaryTokenModified |
+| InitiatingProcessId | 4888 |
+| Process | powershell.exe |
+| Account | ops.maintenance |
+| Command Line | powershell.exe -ExecutionPolicy Bypass -File C:\ProgramData\Corp\Ops\MaintenanceRunner_Distributed.ps1 |
+
+### 💡 Why it matters
+Primary token modification is a high-signal indicator of attempted privilege escalation or token abuse. Even if full elevation does not occur, this behavior confirms the attacker was probing execution boundaries and permissions. This aligns with **MITRE ATT&CK T1134 (Access Token Manipulation)** and often precedes lateral movement, credential reuse, or persistence mechanisms. Token manipulation is quieter than spawning new SYSTEM processes and is commonly used to evade behavioral detections.
+
+### 🔧 KQL Query Used
+```
+let startTime = datetime(2025-11-15);
+let endTime   = datetime(2025-12-15);
+DeviceEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == "ch-ops-wks02"
+| where ActionType == "ProcessPrimaryTokenModified"
+| where InitiatingProcessCommandLine contains ".ps1"
+| project TimeGenerated, ActionType, InitiatingProcessId, InitiatingProcessAccountName, InitiatingProcessCommandLine
+| order by TimeGenerated asc
+```
+
+
+### 🖼️ Screenshot
+<img width="1530" height="172" alt="image" src="https://github.com/user-attachments/assets/7f450866-2a4a-4aa0-bcb7-d262ae1a8259" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When a suspicious script is already confirmed, pivot immediately to `DeviceEvents` for `ProcessPrimaryTokenModified` actions tied to the same script or account. Token manipulation frequently occurs before louder actions such as credential dumping or network-based lateral movement, since attackers want stable execution privileges before expanding access.
+
+</details>
 
 
 <details>
