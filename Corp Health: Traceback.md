@@ -615,6 +615,44 @@ Early identification of probing behavior enables detection **before** escalation
 </details>
 
 <details>
+<summary id="-flag-12">🚩 <strong>Flag 12: DEFENSE EVASION – Antivirus Exclusion Attempt</strong></summary>
+
+### 🎯 Objective
+The attacker attempted to weaken endpoint defenses by excluding a specific directory from Windows Defender scanning, allowing staged tools or payloads to operate without detection.
+
+### 📌 Finding
+A command was executed to add a Windows Defender exclusion for a non-standard operational directory tied to the suspicious maintenance activity. The exclusion attempt was issued via PowerShell, invoked indirectly through `cmd.exe`, consistent with evasion and obfuscation tactics.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:46:37.923Z |
+| Process | cmd.exe |
+| Parent Process | powershell.exe |
+| Command Line | `"cmd.exe" /c echo powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionPath C:\ProgramData\Corp\Ops\staging -Force"` |
+
+### 💡 Why it matters
+Disabling or bypassing antivirus scanning is a classic **Defense Evasion** tactic. By attempting to exclude the `C:\ProgramData\Corp\Ops\staging` directory, the attacker was preparing a safe workspace for tools, staged data, or follow-on payloads without interference from endpoint protection.
+
+This aligns with **MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify Tools**, and typically occurs shortly before higher-risk actions such as credential access, lateral movement, or data exfiltration. Exfiltration is noisy; weakening defenses first reduces the chance of early detection.
+
+### 🔧 KQL Query Used
+<Placeholder – DeviceProcessEvents query filtering for Add-MpPreference or ExclusionPath activity>
+
+### 🖼️ Screenshot
+<Placeholder – Defender exclusion attempt via cmd.exe / PowerShell>
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When investigating suspicious scripts, always pivot into **DeviceProcessEvents** and search for security-control modifications (e.g., `Add-MpPreference`, `Set-MpPreference`). Filter by processes spawned from the suspicious script or its parent. Attackers often wrap these commands in `cmd.exe` or logging statements to test what executes versus what is blocked. Antivirus exclusion attempts frequently precede staging or execution of additional payloads.
+
+</details>
+
+
+<details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
 
 ### 🎯 Objective
