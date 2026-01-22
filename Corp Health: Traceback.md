@@ -661,6 +661,53 @@ When investigating suspicious scripts, always pivot into **DeviceProcessEvents**
 
 </details>
 
+<details>
+<summary id="-flag-13">🚩 <strong>Flag 13: Execution – PowerShell Encoded Command</strong></summary>
+
+### 🎯 Objective
+Execute PowerShell commands in an obfuscated manner to evade casual inspection and signature-based detection while continuing attacker-controlled logic on the host.
+
+### 📌 Finding
+A PowerShell process executed using the `-EncodedCommand` flag under the `ops.maintenance` account. The encoded payload was Base64-encoded Unicode and required manual decoding to reveal the true command executed.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:46:25.514Z |
+| Process | powershell.exe |
+| Parent Process | MaintenanceRunner_Distributed.ps1 |
+| Command Line | powershell.exe -NoProfile -EncodedCommand \<Base64\> |
+| Decoded Command | Write-Output 'token-6D5E4EE08227' |
+
+### 💡 Why it matters
+Encoded PowerShell commands are a common defense-evasion technique used to obscure attacker intent and bypass simple logging or alerting rules. While the decoded command itself appears benign, its execution confirms that the attacker-controlled script successfully executed arbitrary PowerShell payloads. This maps to **MITRE ATT&CK T1059.001 (Command and Scripting Interpreter: PowerShell)** and signals readiness for higher-risk actions such as credential access, privilege manipulation, or payload staging.
+
+### 🔧 KQL Query Used
+```
+let startTime = datetime(2025-11-23);
+let endTime = datetime(2025-12-05);
+let suspectmachine = "ch-ops-wks02";
+DeviceProcessEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == suspectmachine 
+| where ProcessCommandLine contains "powershell" and ProcessCommandLine contains "-EncodedCommand"
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, ProcessCommandLine
+```
+
+### 🖼️ Screenshot
+<img width="1176" height="138" alt="image" src="https://github.com/user-attachments/assets/43a95d8e-7b34-4120-be23-78e4238aef9e" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When investigating suspicious scripts, always check for PowerShell executions using `-EncodedCommand`. Use KQL to surface candidate events, but decode Base64 payloads locally when necessary—PowerShell EncodedCommand uses Unicode, which KQL does not reliably decode. Encoded execution often precedes credential access or privilege manipulation because it allows attackers to test capabilities quietly before noisier actions like exfiltration.
+
+</details>
+
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
