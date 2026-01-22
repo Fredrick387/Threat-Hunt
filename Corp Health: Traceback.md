@@ -1183,6 +1183,51 @@ Do not assume all non-10.x.x.x addresses represent the attacker’s true origin.
 
 </details>
 
+<details>
+<summary id="-flag-23">🚩 <strong>Flag 23: Internal Pivot Host Identified</strong></summary>
+
+### 🎯 Objective
+Identify whether the attacker leveraged an internal system as a pivot point when accessing CH-OPS-WKS02, indicating multi-hop intrusion behavior within the environment.
+
+### 📌 Finding
+Telemetry shows that the attacker’s remote session activity consistently references an internal private IP address distinct from the victim host. This internal address represents an Azure virtual network system used as an intermediary pivot before interacting with CH-OPS-WKS02.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-12-02T23:56:01.0072771Z |
+| ActionType | ConnectionSuccess |
+| Remote Session Device Name | 对手 |
+| Internal Pivot IP | 10.168.0.6 |
+
+### 💡 Why it matters
+The presence of an internal pivot host confirms that the attacker did not access CH-OPS-WKS02 directly from an external source. Instead, they operated through another compromised internal system, increasing stealth and complicating detection.
+
+This behavior aligns with **MITRE ATT&CK – Lateral Movement (TA0008)**, specifically techniques involving internal infrastructure hopping to reduce exposure and bypass perimeter controls. Identifying pivot hosts is critical for scoping the breach and preventing reinfection from trusted internal paths.
+
+### 🔧 KQL Query Used
+```
+let startTime = todatetime(2025-11-15);
+let endTime   = datetime(2025-12-15);
+DeviceNetworkEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where InitiatingProcessRemoteSessionIP != "100.64.100.6"
+| where InitiatingProcessRemoteSessionDeviceName == "对手"
+| project TimeGenerated, ActionType, DeviceName, InitiatingProcessRemoteSessionIP, InitiatingProcessRemoteSessionDeviceName
+```
+### 🖼️ Screenshot
+<img width="1216" height="197" alt="image" src="https://github.com/user-attachments/assets/24ccfc7a-de6f-4548-a285-9e6b217de391" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When analyzing remote session telemetry, always enumerate distinct `InitiatingProcessRemoteSessionIP` values. Exclude the victim’s local IP and known relay ranges (such as 100.64.0.0/10). Any remaining private 10.x.x.x address likely represents an internal pivot host that must be investigated for prior compromise.
+
+</details>
 
 
 <details>
