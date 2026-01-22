@@ -1105,6 +1105,85 @@ This flag confirms the attacker transitioned from execution into **durable acces
 
 </details>
 
+<details>
+<summary id="-flag-21">🚩 <strong>Flag 21: Remote Session Source Device Identification</strong></summary>
+
+### 🎯 Objective
+Identify whether the attacker interacted with the host locally or through a remote session, and determine the unique session identifier associated with the intrusion.
+
+### 📌 Finding
+Multiple suspicious events on CH-OPS-WKS02 contained consistent remote session metadata, indicating the attacker was interacting with the system via a remote session rather than physical access. The same remote session device name appeared repeatedly across file, process, and network telemetry.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Remote Session Device Name | 对手 |
+| Remote Session Present | true |
+| Data Source | DeviceFileEvents / DeviceProcessEvents |
+| Session Consistency | Reused across multiple attacker actions |
+
+### 💡 Why it matters
+Remote session identifiers allow defenders to correlate disparate telemetry back to a single attacker interaction point. Identifying a consistent remote session device name confirms interactive access and supports attribution of actions to a single intrusion chain rather than background automation.
+
+MITRE ATT&CK:
+- T1021 – Remote Services
+- T1078 – Valid Accounts (interactive access context)
+
+
+### 🖼️ Screenshot
+<img width="688" height="125" alt="image" src="https://github.com/user-attachments/assets/6f464830-92ce-4aad-a223-a75d75cf6c16" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When remote session fields are populated, pivot on InitiatingProcessRemoteSessionDeviceName across all tables (Process, File, Network, Registry). Treat this value as a session label, not a hostname, and use it to bind the attacker’s activity together across the timeline.
+
+</details>
+
+---
+
+<details>
+<summary id="-flag-22">🚩 <strong>Flag 22: Remote Session Source IP Identification</strong></summary>
+
+### 🎯 Objective
+Determine the network origin used by the attacker to establish their remote interactive session with CH-OPS-WKS02.
+
+### 📌 Finding
+The same suspicious events associated with the remote session device name also contained a consistent remote session IP address. This IP appeared repeatedly across attacker-driven activity and does not belong to the internal corporate address space.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Remote Session IP | 100.64.100.6 |
+| IP Type | CGNAT / Relay Address Space |
+| Data Source | DeviceFileEvents / DeviceProcessEvents |
+| Session Consistency | Identical across multiple events |
+
+### 💡 Why it matters
+The 100.64.0.0/10 range is commonly used for carrier-grade NAT and relay infrastructure. This strongly suggests the attacker accessed the system through an intermediate relay or tunneling service rather than directly from their true origin. This distinction is critical when reconstructing the attacker’s path and understanding why later flags require separating relay IPs from true source IPs.
+
+MITRE ATT&CK:
+- T1090 – Proxy
+- T1021 – Remote Services
+
+
+### 🖼️ Screenshot
+<img width="688" height="125" alt="image" src="https://github.com/user-attachments/assets/f0dd4555-511f-409b-9862-22e1c21610bb" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+Do not assume all non-10.x.x.x addresses represent the attacker’s true origin. Identify CGNAT or relay ranges early, then continue pivoting to locate internal pivot hosts or later public IPs that represent the attacker’s actual source.
+
+</details>
+
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
