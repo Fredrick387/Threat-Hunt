@@ -1039,6 +1039,72 @@ This flag represents a clear pivot from execution into active attacker control o
 
 </details>
 
+<details>
+<summary id="-flag-20">🚩 <strong>Flag 20: Persistence via Startup Folder Placement</strong></summary>
+
+### 🎯 Objective
+Establish persistence by ensuring the attacker’s executable automatically runs on user logon, allowing continued access without re-exploitation.
+
+### 📌 Finding
+After execution and failed outbound connection attempts, the attacker copied the malicious binary `revshell.exe` into a Windows Startup directory. Any executable placed in this folder is launched automatically when a user logs in, providing a simple and reliable persistence mechanism.
+
+The file write was performed shortly after execution, indicating deliberate follow-on persistence rather than incidental file movement.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-12-02T12:28:26.871Z |
+| File Name | revshell.exe |
+| Folder Path | C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup\ |
+| Initiating Process | dllhost.exe |
+| Initiating Command Line | DllHost.exe /Processid:{3AD05575-8857-4850-9277-11B85DB8E09} |
+
+### 💡 Why it matters
+Startup-folder persistence is a **low-effort, high-reliability** technique frequently used after an attacker achieves execution and outbound communication. It requires no registry modification and often evades basic persistence monitoring focused solely on Run keys or scheduled tasks.
+
+At this point in the attack chain:
+- Privilege escalation has already occurred
+- External C2 communication was attempted
+- Persistence ensures access survives reboot or logoff
+
+**MITRE ATT&CK Mapping:**
+- **TA0003 – Persistence**
+- **T1547.001 – Boot or Logon Autostart Execution: Startup Folder**
+
+### 🔧 KQL Query Used
+```
+let startTime = todatetime('2025-11-15');
+let endTime   = datetime(2025-12-15);
+DeviceFileEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where FolderPath contains "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"
+| project TimeGenerated, DeviceName, FolderPath, FileName, InitiatingProcessCommandLine
+```
+
+
+### 🖼️ Screenshot
+<img width="1209" height="199" alt="image" src="https://github.com/user-attachments/assets/da9dd3cd-633a-4a55-8510-046c2d243a5a" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tips:**
+- Monitor file creation and rename events under:
+  - `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup`
+  - User Startup folders
+- Correlate persistence creation shortly after:
+  - Unsigned binary execution
+  - External network activity
+- Alert when uncommon binaries (non-installers) appear in Startup paths
+- Treat persistence following failed C2 attempts as a strong indicator of attacker intent
+
+This flag confirms the attacker transitioned from execution into **durable access** on the host.
+
+</details>
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
