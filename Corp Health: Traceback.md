@@ -851,6 +851,194 @@ DeviceFileEvents
 
 </details>
 
+<details>
+<summary id="-flag-17">🚩 <strong>Flag 17: External Tool Download via Dynamic Tunnel</strong></summary>
+
+### 🎯 Objective
+Transfer attacker tooling onto the compromised host using an external, temporary infrastructure while minimizing detection and attribution.
+
+### 📌 Finding
+Following earlier privilege manipulation and staging activity, the attacker used `curl.exe` to retrieve an unsigned executable from an external dynamic tunneling service. The file was written directly to disk under the user context, confirming deliberate ingress of follow-on tooling rather than benign update activity.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-12-02T12:17:07.718Z |
+| File Name | revshell.exe |
+| Action Type | FileCreated |
+| Initiating Process | curl.exe |
+| Initiating Account | chadmin |
+| Download URL | https://unresuscitating-donnette-smothery.ngrok-free.dev/revshell.exe |
+
+### 💡 Why it matters
+Dynamic tunneling services (such as ngrok) are frequently abused by attackers to host short-lived payloads that evade traditional reputation-based blocking. The use of `curl.exe` — uncommon for interactive users in many enterprise environments — further strengthens the case for malicious intent.
+
+This activity demonstrates:
+- A clear transition from **local host manipulation** to **external tool ingress**
+- Use of **temporary attacker-controlled infrastructure** to reduce traceability
+- Intent to execute custom tooling rather than rely solely on native utilities
+
+**MITRE ATT&CK Mapping:**
+- **TA0011 – Command and Control**
+- **T1105 – Ingress Tool Transfer**
+
+### 🔧 KQL Query Used
+```
+let startTime = (todatetime('2025-11-25T04:14:07.0587586Z'));
+let endTime   = datetime(2025-12-15);
+DeviceFileEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| project TimeGenerated, ActionType, FileName, InitiatingProcessCommandLine, InitiatingProcessAccountName
+```
+
+### 🖼️ Screenshot
+<img width="925" height="161" alt="image" src="https://github.com/user-attachments/assets/ffc84ca0-3ab3-4653-b598-235bb5b3b60b" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tips:**
+- Monitor for `curl.exe`, `wget`, or `Invoke-WebRequest` initiating file writes on endpoints where they are not standard tools.
+- Flag downloads from:
+  - Dynamic DNS domains
+  - Tunneling platforms (ngrok, cloudflared, localtunnel)
+- Correlate external downloads occurring shortly after:
+  - Privilege escalation attempts
+  - Token modification events
+  - Defender exclusion attempts
+
+This combination strongly indicates post-exploitation tooling deployment rather than legitimate administration.
+
+</details>
+
+<details>
+<summary id="-flag-18">🚩 <strong>Flag 18: Execution of Staged Unsigned Binary</strong></summary>
+
+### 🎯 Objective
+Transition from staging to active tool execution by launching a newly downloaded, unsigned binary under user context to establish interactive control.
+
+### 📌 Finding
+Shortly after `revshell.exe` was downloaded from an external dynamic tunnel, Defender recorded its execution on CH-OPS-WKS02. The binary was launched via `Explorer.EXE`, mimicking normal user-driven execution rather than automated service behavior.
+
+This marks the attacker’s shift from preparation to **active post-exploitation**.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-12-02T12:30:03.909Z |
+| Executed File | revshell.exe |
+| Action Type | ProcessCreated |
+| Parent Process | Explorer.EXE |
+| Initiating Account | chadmin |
+
+### 💡 Why it matters
+Launching attacker tooling through `Explorer.EXE` is a common tradecraft technique to blend malicious execution into normal user activity. This avoids some behavioral detections that trigger on service-based or scripted execution.
+
+At this stage:
+- The attacker has **privileges**
+- Tooling is **on disk**
+- Execution confirms **interactive control intent**
+- Network callbacks are likely imminent
+
+**MITRE ATT&CK Mapping:**
+- **TA0002 – Execution**
+- **T1204.002 – User Execution: Malicious File**
+- **TA0011 – Command and Control (follow-on)**
+
+### 🔧 KQL Query Used
+<Placeholder – DeviceProcessEvents filtered by FileName == "revshell.exe">
+
+### 🖼️ Screenshot
+<Placeholder – ProcessCreated event showing Explorer.EXE launching revshell.exe>
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tips:**
+- Alert on unsigned executables launched by `Explorer.EXE` from:
+  - User profile directories
+  - ProgramData paths
+  - Startup folders
+- Correlate execution events occurring shortly after:
+  - External downloads
+  - Defender exclusion attempts
+  - Privilege or token modifications
+- Treat “Explorer → unknown EXE” as high-risk when preceded by curl or PowerShell ingress activity
+
+This execution event confirms the attacker has moved beyond simulation and into hands-on tooling deployment.
+
+</details>
+
+<details>
+<summary id="-flag-19">🚩 <strong>Flag 19: External Command-and-Control Connection Attempt</strong></summary>
+
+### 🎯 Objective
+Establish outbound command-and-control (C2) communication from the newly executed attacker tooling to an external endpoint, enabling remote interaction and tasking.
+
+### 📌 Finding
+After `revshell.exe` was executed on CH-OPS-WKS02, the binary attempted to initiate outbound network communication to an external IP address over a high, non-standard port. Defender logged multiple connection attempts originating directly from the malicious executable, confirming active C2 behavior rather than passive staging.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-12-02T12:57:50.950Z |
+| Initiating Process | revshell.exe |
+| Initiating Account | chadmin |
+| Remote IP | 13.228.171.119 |
+| Remote Port | 11746 |
+
+### 💡 Why it matters
+This event confirms the attacker successfully transitioned from local execution to **external command-and-control activity**. High-numbered, uncommon ports combined with unsigned binaries are strong indicators of reverse shells or custom implants.
+
+At this stage of the intrusion:
+- Privilege escalation has already occurred
+- Tooling is actively running
+- The attacker is attempting live remote access
+
+**MITRE ATT&CK Mapping:**
+- **TA0011 – Command and Control**
+- **T1071 – Application Layer Protocol**
+- **T1571 – Non-Standard Port**
+- **TA0008 – Lateral Movement (potential next phase)**
+
+### 🔧 KQL Query Used
+```
+let startTime = todatetime('2025-12-02T12:30:03.9096976Z');
+let endTime   = datetime(2025-12-15);
+DeviceNetworkEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where InitiatingProcessCommandLine contains "rev"
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, InitiatingProcessCommandLine, RemoteIP, RemotePort
+```
+
+### 🖼️ Screenshot
+<img width="1116" height="229" alt="image" src="https://github.com/user-attachments/assets/db70f2e6-4006-4f01-b4a9-addff54ec4fe" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tips:**
+- Alert on outbound connections from:
+  - Unsigned executables
+  - Recently created files
+  - Files executed from user or ProgramData directories
+- Flag high, uncommon destination ports combined with:
+  - Curl-based ingress
+  - Explorer-launched binaries
+  - Prior Defender exclusion attempts
+- Correlate process execution → network activity within minutes as a strong C2 signal
+
+This flag represents a clear pivot from execution into active attacker control of the host.
+
+</details>
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
