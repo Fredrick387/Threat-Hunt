@@ -790,6 +790,67 @@ After identifying a token modification event, always extract `OriginalTokenUserS
 
 </details>
 
+<details>
+<summary id="-flag-20">🚩 <strong>Flag 20: Startup Folder Persistence</strong></summary>
+
+### 🎯 Objective
+Establish persistence by ensuring the malicious executable automatically launches on user logon.
+
+### 📌 Finding
+After executing the staged unsigned binary, the attacker copied the executable into a Windows Startup directory. Files placed in this location are executed automatically when a user logs in, providing a simple and reliable persistence mechanism without requiring registry modification or scheduled tasks.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-12-02T12:28:26.871Z |
+| File Name | revshell.exe |
+| File Path | C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\revshell.exe |
+| Action Type | FileRenamed |
+| File Type | PortableExecutable |
+| Initiating Process | dllhost.exe |
+| Initiating Account | chadmin |
+| Integrity Level | High |
+
+### 💡 Why it matters
+Startup folder persistence is a low-friction, high-reliability technique commonly used after initial compromise to maintain access across reboots or user logons.
+
+From an attack-chain perspective, this confirms:
+- The attacker transitioned from exploration and staging to long-term foothold establishment.
+- Persistence was chosen in **user context**, aligning with earlier token manipulation rather than full SYSTEM takeover.
+- The attacker favored filesystem-based persistence over noisier registry or service-based mechanisms.
+
+**MITRE ATT&CK Mapping:**
+- **TA0003 – Persistence**
+- **T1547.001 – Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder**
+
+### 🔧 KQL Query Used
+```
+let startTime = (todatetime('2025-11-25T04:14:07.0587586Z'));
+let endTime   = datetime(2025-12-15);
+DeviceFileEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+```
+
+### 🖼️ Screenshot
+<img width="1422" height="396" alt="image" src="https://github.com/user-attachments/assets/46e5c624-6eae-4518-a8f6-8d267b70ddd9" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tips:**
+- Monitor `DeviceFileEvents` for `.exe` files written to:
+  - `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\`
+  - User-level Startup folders under `AppData`
+- Correlate persistence placement with:
+  - Recent unsigned binary execution
+  - Prior outbound network activity from the same executable
+- Treat Startup-folder persistence immediately following tool execution as **post-compromise confirmation**, not an initial-access signal.
+
+</details>
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
