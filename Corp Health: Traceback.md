@@ -756,6 +756,40 @@ When a suspicious script is already confirmed, pivot immediately to `DeviceEvent
 
 </details>
 
+<details>
+<summary id="-flag-15">🚩 <strong>Flag 15: Privilege Escalation – Token Owner Identified</strong></summary>
+
+### 🎯 Objective
+Identify which security principal’s access token was modified to determine the attacker’s effective privilege level and risk impact.
+
+### 📌 Finding
+Analysis of the `ProcessPrimaryTokenModified` event reveals that the modified token belonged to a specific user SID rather than a SYSTEM or built-in administrator account. The attacker adjusted privileges on an existing user token, confirming a controlled and stealth-oriented escalation attempt rather than a noisy SYSTEM takeover.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| ActionType | ProcessPrimaryTokenModified |
+| TokenChangeDescription | Privileges were added to the token |
+| OriginalTokenUserSid | S-1-5-21-1605642021-30596605-784192815-1000 |
+| CurrentTokenUserSid | S-1-5-21-1605642021-30596605-784192815-1000 |
+| Account Context | ops.maintenance |
+
+### 💡 Why it matters
+Identifying the token owner clarifies the attacker’s intent and constraints. Modifying a **user-level token** rather than SYSTEM suggests the attacker was testing privilege boundaries or enabling specific rights (e.g., SeDebugPrivilege) without fully elevating. This aligns with **MITRE ATT&CK T1134 (Access Token Manipulation)** and often precedes credential access, lateral movement, or defense evasion. Token-level privilege adjustments are quieter than spawning elevated processes and are commonly used to blend into legitimate user activity.
+
+### 🖼️ Screenshot
+<img width="1213" height="402" alt="image" src="https://github.com/user-attachments/assets/d605ff1e-2193-4da6-92bd-6c0d6ddea8c1" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+After identifying a token modification event, always extract `OriginalTokenUserSid` and `CurrentTokenUserSid`. If they match a standard user SID rather than SYSTEM, treat this as **preparatory escalation** — attackers often tune privileges before attempting credential access or lateral movement because token manipulation is significantly less noisy than spawning elevated shells.
+
+</details>
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
