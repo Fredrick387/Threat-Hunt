@@ -597,10 +597,20 @@ Unlike registry-based persistence or token modification, this activity occurs en
 This behavior aligns with **MITRE ATT&CK TA0004 (Privilege Escalation)** and reflects attacker tradecraft designed to validate access boundaries before committing to riskier actions.
 
 ### 🔧 KQL Query Used
-<placeholder>
+```
+let startTime = datetime(2025-11-23);
+let endTime = datetime(2025-12-05);
+let suspectmachine = "ch-ops-wks02";
+DeviceProcessEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == suspectmachine 
+| where ProcessCommandLine contains "powershell" and ProcessCommandLine contains "staging"
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, ProcessCommandLine
+```
 
 ### 🖼️ Screenshot
-<placeholder>
+<img width="1176" height="138" alt="image" src="https://github.com/user-attachments/assets/f8c3d399-5c44-4714-86b2-1f347bce9568" />
+
 
 ### 🛠️ Detection Recommendation
 
