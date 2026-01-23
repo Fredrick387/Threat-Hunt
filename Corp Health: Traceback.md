@@ -1229,6 +1229,134 @@ When analyzing remote session telemetry, always enumerate distinct `InitiatingPr
 
 </details>
 
+<details>
+<summary id="-flag-24">🚩 <strong>Flag 24: Initial Remote Logon Detected</strong></summary>
+
+### 🎯 Objective
+Identify the earliest successful logon event indicating the attacker’s initial access to the host.
+
+### 📌 Finding
+A successful remote network logon occurred to CH-OPS-WKS02 from an external public IP using NTLM authentication. This event represents the attacker’s first confirmed foothold on the system.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:08:31.1849379Z |
+| Logon Type | Network |
+| Protocol | NTLM |
+| Remote Device Name | 对手 |
+| Remote IP | 104.164.168.17 |
+| Account | chadmin |
+
+### 💡 Why it matters
+This event marks the true start of the intrusion. Network logons using NTLM from a public IP strongly suggest credential-based access rather than local activity. Identifying the first successful logon anchors the entire attack timeline and enables accurate scoping of follow-on actions.
+
+MITRE ATT&CK:  
+- TA0001 – Initial Access  
+- T1078 – Valid Accounts
+
+### 🔧 KQL Query Used
+```
+let startTime = todatetime(2025-11-15);
+let endTime   = datetime(2025-12-15);
+DeviceLogonEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where AccountName contains "chadmin"
+| order by TimeGenerated asc
+```
+
+### 🖼️ Screenshot
+<img width="897" height="317" alt="image" src="https://github.com/user-attachments/assets/7870be82-9db9-4aed-b68b-80d0e8ed0cf1" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When tracing initial access, prioritize DeviceLogonEvents with `LogonType == Network` and `RemoteIPType == Public`. Sort ascending to find the earliest foothold, then pivot forward in time using the same account and remote session metadata.
+
+</details>
+
+<details>
+<summary id="-flag-25">🚩 <strong>Flag 25: External Source IP for Initial Access</strong></summary>
+
+### 🎯 Objective
+Determine the external IP address used by the attacker during their first successful logon.
+
+### 📌 Finding
+The attacker authenticated to CH-OPS-WKS02 from a public IP address not associated with internal infrastructure or known management services.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:08:31.1849379Z |
+| Remote IP | 104.164.168.17 |
+| IP Type | Public |
+| Protocol | NTLM |
+
+### 💡 Why it matters
+Identifying the external source IP enables correlation with perimeter logs, firewall telemetry, and threat intelligence. Public IP–based authentication combined with NTLM is a common indicator of credential abuse rather than legitimate remote administration.
+
+MITRE ATT&CK:  
+- TA0001 – Initial Access  
+- T1078 – Valid Accounts
+
+
+### 🖼️ Screenshot
+<img width="470" height="140" alt="image" src="https://github.com/user-attachments/assets/5f00e285-6d26-412a-9a4d-fd1b42b1ee30" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+Always extract and preserve the first external IP used during authentication. Even if later sessions pivot internally, this IP often represents the attacker’s true origin and is critical for containment and attribution.
+
+</details>
+
+<details>
+<summary id="-flag-26">🚩 <strong>Flag 26: Compromised Account Used for Initial Access</strong></summary>
+
+### 🎯 Objective
+Identify which account credentials were used by the attacker during the first successful logon.
+
+### 📌 Finding
+The attacker authenticated using the local administrative account `chadmin`, indicating either credential compromise or abuse of an overprivileged account.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp | 2025-11-23T03:08:31.1849379Z |
+| Account Name | chadmin |
+| Account SID | S-1-5-21-1605642021-30596605-784192815-1002 |
+| Logon Type | Network |
+| Protocol | NTLM |
+
+### 💡 Why it matters
+Use of an administrative account for initial access significantly increases attacker capability from the outset, reducing the need for early privilege escalation. This elevates the risk of rapid persistence, credential harvesting, and lateral movement.
+
+MITRE ATT&CK:  
+- TA0001 – Initial Access  
+- T1078 – Valid Accounts  
+- TA0004 – Privilege Escalation
+
+### 🖼️ Screenshot
+<img width="470" height="140" alt="image" src="https://github.com/user-attachments/assets/488852e7-2721-49e1-be51-5c140ec0f6f4" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+Baseline which accounts are allowed to authenticate remotely. Any admin-capable account logging in from a public IP should be treated as high severity and immediately correlated with subsequent process, registry, and network activity.
+
+</details>
+
+
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
