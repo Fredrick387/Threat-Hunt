@@ -49,6 +49,8 @@ The investigation confirmed deliberate malicious intent rather than benign admin
 
 - [🧠 Hunt Overview](#-hunt-overview)
 - [🧬 MITRE ATT&CK Summary](#-mitre-attck-summary)
+- [🔥 Executive MITRE ATT&CK Heatmap](#-executive-mitre-attck-heatmap-condensed)
+- [📊 Executive Takeaway](#-executive-takeaway)
 - [🔍 Flag Analysis](#-flag-analysis)
   - [🚩 Flag 1](#-flag-1)
   - [🚩 Flag 2](#-flag-2)
@@ -85,47 +87,81 @@ The investigation confirmed deliberate malicious intent rather than benign admin
 - [🧾 Final Assessment](#-final-assessment)
 - [📎 Analyst Notes](#-analyst-notes)
 
-
 ---
 
 ## 🧠 Hunt Overview
 
-<High-level narrative describing the attack lifecycle, key behaviors observed, and why this hunt matters.>
+This threat hunt reconstructed a full attacker intrusion lifecycle on the endpoint **CH-OPS-WKS02**, beginning with unauthorized remote access using valid credentials and culminating in external command-and-control via a dynamically tunneled reverse shell. The adversary leveraged interactive PowerShell execution, encoded commands, registry and token manipulation, and multiple persistence techniques to maintain access while probing privileges and weakening host defenses. File staging, AV exclusion attempts, and outbound connectivity through an ngrok tunnel confirmed deliberate, hands-on-keyboard activity rather than automated malware.
+
+This hunt matters because it demonstrates how a determined attacker can bypass perimeter defenses using legitimate credentials, blend into normal administrative telemetry, and progressively escalate impact—highlighting the importance of correlating endpoint, network, and logon telemetry to detect intent before data loss or lateral spread occurs.
+
+---
+
+## 🧬 MITRE ATT&CK Summary
+
+| Flag | Technique Category | MITRE ID | Priority |
+|-----:|-------------------|----------|----------|
+| 1 | Execution – Command & Scripting Interpreter (PowerShell) | T1059.001 | High |
+| 2 | Masquerading (Legitimate-Looking Script) | T1036 | High |
+| 3 | Command and Control – Application Layer Protocol | T1071.001 | High |
+| 4 | Command and Control – Beaconing | T1071 | High |
+| 5 | Collection – Data Staging (Local Files) | T1074.001 | Medium |
+| 6 | Defense Evasion – Artifact Manipulation (Hash Variance) | T1070.004 | Medium |
+| 7 | Collection – Multi-Directory Staging | T1074 | Medium |
+| 8 | Credential Access – Credential Store Discovery | T1555 | High |
+| 9 | Persistence – Scheduled Task Creation | T1053.005 | High |
+| 10 | Persistence – Run Key (Ephemeral Autostart) | T1547.001 | High |
+| 11 | Privilege Escalation – Privilege Probe / Config Adjustment | T1134 | High |
+| 12 | Defense Evasion – Modify Security Tools (AV Exclusion Attempt) | T1562.001 | High |
+| 13 | Execution – Obfuscated / Encoded PowerShell | T1027 | High |
+| 14 | Privilege Escalation – Access Token Manipulation | T1134 | Critical |
+| 15 | Privilege Escalation – Abuse of Modified Token | T1134.001 | Critical |
+| 16 | Ingress Tool Transfer (External Download) | T1105 | Critical |
+| 17 | Command and Control – External Dynamic Tunnel (ngrok) | T1090.001 | Critical |
+| 18 | Execution – User Execution via Explorer | T1204.002 | High |
+| 19 | Command and Control – Non-Standard Port Usage | T1571 | High |
+| 20 | Persistence – Startup Folder Placement | T1547.001 | High |
+| 21 | Lateral Access – Remote Session (Interactive Access) | T1021.001 | High |
+| 22 | Lateral Access – External Remote Session IP | T1021.001 | High |
+| 23 | Lateral Movement – Internal Pivot Host Identification | T1021 | High |
+| 24 | Initial Access – Valid Accounts (Remote Logon) | T1078 | Critical |
+| 25 | Initial Access – External Origin IP | T1078 | Critical |
+| 26 | Credential Access – Compromised Account Identification | T1078.001 | Critical |
+| 27 | Discovery – Network / Geo-IP Contextualization | T1046 | Medium |
+| 28 | Discovery – First Process Post-Logon | T1057 | High |
+| 29 | Discovery – File Access (Credential Recon) | T1083 | High |
+| 30 | Discovery / Execution – Post-Recon Action | T1059 | High |
+| 31 | Lateral Movement – Secondary Account Access | T1021 | Critical |
 
 ---
 
 ## 🔥 Executive MITRE ATT&CK Heatmap (Condensed)
 
-This heatmap summarizes attacker capability maturity observed during the hunt.
-It aggregates all flags into high-level ATT&CK phases to show **where the adversary invested effort** and **where detection mattered most**.
-
 | ATT&CK Phase | Techniques Observed | Severity | Analyst Notes |
 |--------------|-------------------|----------|---------------|
-| **Initial Access** | Valid Accounts (T1078), Remote Logon | 🔴 Critical | Attacker authenticated using legitimate credentials from an external IP, bypassing perimeter defenses entirely. |
-| **Execution** | PowerShell, Encoded Commands, User Execution | 🔴 Critical | Heavy reliance on PowerShell for execution, obfuscation, and tool delivery. Indicates hands-on-keyboard activity. |
-| **Persistence** | Run Keys, Startup Folder, Scheduled Tasks | 🔴 Critical | Multiple persistence mechanisms tested, including ephemeral Run keys and Startup folder placement. |
-| **Privilege Escalation** | Token Manipulation, Config Adjust Probes | 🔴 Critical | Attacker actively probed and modified access tokens, confirming escalation intent rather than accidental misconfig. |
-| **Defense Evasion** | AV Exclusion Attempts, Obfuscation | 🔴 High | Explicit attempt to exclude folders from Defender scanning prior to tool execution. |
-| **Credential Access** | Registry Inspection, Token SID Targeting | 🔴 High | Credential and token-related telemetry indicates preparation for reuse or lateral movement. |
-| **Discovery** | Process Enumeration, File Access, Recon | 🟠 Medium | Early post-logon behavior focused on situational awareness and credential discovery. |
-| **Lateral Movement** | Remote Sessions, Internal Pivoting | 🔴 High | Evidence of internal pivoting through Azure network ranges and multiple session sources. |
-| **Command & Control** | ngrok Tunnel, Non-Standard Ports | 🔴 Critical | External dynamic tunneling infrastructure used to establish C2, bypassing static IP detection. |
-| **Collection / Staging** | Local File Staging, Duplicate Artifacts | 🟠 Medium | Files staged across multiple directories prior to tool execution and persistence. |
+| Initial Access | Valid Accounts (T1078), Remote Logon | 🔴 Critical | Legitimate credentials used from external IP. |
+| Execution | PowerShell, Encoded Commands | 🔴 Critical | Operator-driven execution with obfuscation. |
+| Persistence | Run Keys, Startup Folder, Scheduled Tasks | 🔴 Critical | Multiple persistence paths tested and deployed. |
+| Privilege Escalation | Token Manipulation, Config Probing | 🔴 Critical | Active probing and modification of token privileges. |
+| Defense Evasion | AV Exclusion Attempts | 🔴 High | Explicit Defender exclusion attempts observed. |
+| Credential Access | Registry & Token Inspection | 🔴 High | Preparation for credential reuse or pivoting. |
+| Discovery | File & Process Enumeration | 🟠 Medium | Early situational awareness activity. |
+| Lateral Movement | Remote Sessions, Internal Pivoting | 🔴 High | Internal Azure network pivoting observed. |
+| Command & Control | ngrok Tunnel, Non-Standard Ports | 🔴 Critical | Dynamic tunneling infrastructure enabled C2. |
+| Collection / Staging | File Duplication & Placement | 🟠 Medium | Pre-exfiltration staging behavior identified. |
 
 ---
 
-### 🧠 Executive Takeaway
+## 📊 Executive Takeaway
 
-This adversary demonstrated **full-spectrum intrusion capability**:
-- Legitimate access
-- Interactive execution
-- Privilege manipulation
-- Defense evasion
-- External command-and-control
+This intrusion reflects a **full-spectrum, operator-led attack** rather than opportunistic malware.
 
-This was **not automated malware**.  
-This was **an operator-driven intrusion**.
+The attacker demonstrated deliberate sequencing: credentialed access → reconnaissance → privilege probing → defense evasion → persistence → external command-and-control.  
+The absence of immediate destructive action reinforces that **this was a foothold-establishment operation**, likely intended for long-term access, lateral movement, or follow-on objectives.
 
+Early correlation of logon telemetry, PowerShell behavior, and outbound tunneling activity is critical to disrupting similar intrusions before they mature.
+
+---
 
 ## 🔍 Flag Analysis
 
