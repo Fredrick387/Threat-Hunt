@@ -1707,27 +1707,38 @@ When attackers enumerate a *specific* user account shortly after recon activity,
 ## 🚨 Detection Gaps & Recommendations
 
 ### Observed Gaps
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+- **Credential-based access was not challenged early**  
+  Valid credentials were used successfully from external infrastructure without MFA enforcement, geolocation-based restrictions, or adaptive risk controls triggering alerts.
+
+- **PowerShell abuse blended into administrative noise**  
+  Encoded PowerShell execution, script-based tooling, and maintenance-themed filenames were not differentiated from legitimate IT activity, allowing hands-on-keyboard behavior to persist undetected.
+
+- **Dynamic tunneling and nonstandard C2 traffic lacked context-aware detection**  
+  Outbound connectivity to a dynamic tunneling service (ngrok) over high, nonstandard ports was not immediately flagged as anomalous for this host or user profile.
+
+- **Persistence attempts were detected but not escalated**  
+  Short-lived Run-key creation, Startup folder placement, and scheduled task artifacts were logged but did not trigger a high-confidence response despite clear malicious sequencing.
+
+---
 
 ### Recommendations
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+- **Enforce strong authentication controls for remote access**  
+  Require MFA for all remote logons, apply conditional access based on geography and device trust, and alert on successful external logons using service or admin-adjacent accounts.
+
+- **Harden PowerShell monitoring and baselining**  
+  Alert on `-EncodedCommand`, execution from user-writable directories, and PowerShell activity tied to unusual parent processes or off-hours execution patterns.
+
+- **Detect and restrict dynamic tunneling services**  
+  Implement network detections for known tunneling platforms (e.g., ngrok), including DNS patterns, TLS fingerprints, and repeated connection attempts to high-risk ports.
+
+- **Elevate ephemeral persistence signals**  
+  Treat short-lived persistence (Run keys added then removed, Startup folder copies) as high-fidelity malicious indicators, especially when correlated with prior privilege or AV-evasion activity.
 
 ---
 
 ## 🧾 Final Assessment
 
-<Concise executive-style conclusion summarizing risk, attacker sophistication, and defensive posture.>
+This investigation confirms a **deliberate, operator-driven intrusion** leveraging valid credentials, interactive PowerShell execution, and layered persistence to establish and maintain access. The attacker demonstrated clear intent to escalate privileges, evade defenses, and establish external command-and-control using dynamic tunneling infrastructure. While endpoint telemetry captured each phase of the attack, gaps in correlation and alert prioritization allowed the activity to progress deeper than it should have. Strengthening identity controls, PowerShell visibility, and behavioral correlation would significantly reduce the dwell time of similar threats.
 
 ---
 
-## 📎 Analyst Notes
-
-- Report structured for interview and portfolio review  
-- Evidence reproducible via advanced hunting  
-- Techniques mapped directly to MITRE ATT&CK  
-
----
