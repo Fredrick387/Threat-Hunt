@@ -1104,7 +1104,7 @@ DeviceFileEvents
 This flag confirms the attacker transitioned from execution into **durable access** on the host.
 
 </details>
-
+---
 <details>
 <summary id="-flag-21">🚩 <strong>Flag 21: Remote Session Source Device Identification</strong></summary>
 
@@ -1182,7 +1182,7 @@ MITRE ATT&CK:
 Do not assume all non-10.x.x.x addresses represent the attacker’s true origin. Identify CGNAT or relay ranges early, then continue pivoting to locate internal pivot hosts or later public IPs that represent the attacker’s actual source.
 
 </details>
-
+---
 <details>
 <summary id="-flag-23">🚩 <strong>Flag 23: Internal Pivot Host Identified</strong></summary>
 
@@ -1228,7 +1228,7 @@ DeviceNetworkEvents
 When analyzing remote session telemetry, always enumerate distinct `InitiatingProcessRemoteSessionIP` values. Exclude the victim’s local IP and known relay ranges (such as 100.64.0.0/10). Any remaining private 10.x.x.x address likely represents an internal pivot host that must be investigated for prior compromise.
 
 </details>
-
+---
 <details>
 <summary id="-flag-24">🚩 <strong>Flag 24: Initial Remote Logon Detected</strong></summary>
 
@@ -1278,7 +1278,7 @@ DeviceLogonEvents
 When tracing initial access, prioritize DeviceLogonEvents with `LogonType == Network` and `RemoteIPType == Public`. Sort ascending to find the earliest foothold, then pivot forward in time using the same account and remote session metadata.
 
 </details>
-
+---
 <details>
 <summary id="-flag-25">🚩 <strong>Flag 25: External Source IP for Initial Access</strong></summary>
 
@@ -1316,7 +1316,7 @@ MITRE ATT&CK:
 Always extract and preserve the first external IP used during authentication. Even if later sessions pivot internally, this IP often represents the attacker’s true origin and is critical for containment and attribution.
 
 </details>
-
+---
 <details>
 <summary id="-flag-26">🚩 <strong>Flag 26: Compromised Account Used for Initial Access</strong></summary>
 
@@ -1355,6 +1355,57 @@ MITRE ATT&CK:
 Baseline which accounts are allowed to authenticate remotely. Any admin-capable account logging in from a public IP should be treated as high severity and immediately correlated with subsequent process, registry, and network activity.
 
 </details>
+
+---
+
+<details>
+<summary id="-flag-27">🚩 <strong>Flag 27: Attacker Geographic Attribution</strong></summary>
+
+### 🎯 Objective
+Determine the geographic region from which the attacker operated by enriching the public IP addresses associated with the remote session activity.
+
+### 📌 Finding
+The attacker authenticated and interacted with CH-OPS-WKS02 using a consistent public IP address. External IP geolocation enrichment confirms that this IP resolves to Vietnam, specifically the Hanoi region.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Remote IP | 104.164.168.17 |
+| Country | Vietnam |
+| Region / City | Hanoi |
+| Latitude | 21.0184 |
+| Longitude | 105.8461 |
+
+### 💡 Why it matters
+Geographic attribution helps distinguish between legitimate administrative access and adversary-controlled infrastructure. In this case, the remote session originated from a foreign geographic region inconsistent with normal CorpHealth operations. This supports the conclusion that the activity was attacker-driven rather than internal administration.
+
+**MITRE ATT&CK Mapping:**  
+- **TA0001 – Initial Access**  
+- **TA0011 – Command and Control**
+
+Understanding the attacker’s geographic origin assists in scoping the intrusion, identifying potential access vectors, and informing response actions such as IP blocking, credential resets, and regional risk assessment.
+
+### 🔧 KQL Query Used
+```
+print ip_location=geo_info_from_ip_address('104.164.168.17')
+```
+### 🖼️ Screenshot
+<img width="741" height="355" alt="image" src="https://github.com/user-attachments/assets/c8e1a6da-3e8b-49da-965a-f71bac259b8e" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When native geo-enrichment is unavailable in Defender, analysts should enrich public IPs using external tooling or IP intelligence sources. Repeated remote access from foreign regions—especially when paired with credential abuse and remote sessions—should be treated as high-confidence intrusion indicators and correlated with authentication and persistence telemetry.
+
+</details>
+
+
+
+
+
 
 
 
