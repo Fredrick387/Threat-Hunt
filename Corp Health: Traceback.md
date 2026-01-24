@@ -863,66 +863,47 @@ After identifying a token modification event, always extract `OriginalTokenUserS
 
 </details>
 
+---
+
+
 <details>
-<summary id="-flag-20">🚩 <strong>Flag 20: Startup Folder Persistence</strong></summary>
+<summary id="-flag-16">🚩 <strong>Flag 16: Ingress Tool Transfer – Malicious Executable Written to Disk</strong></summary>
 
 ### 🎯 Objective
-Establish persistence by ensuring the malicious executable automatically launches on user logon.
+Identify the attacker’s initial delivery of external tooling onto the compromised host following privilege escalation activity.
 
 ### 📌 Finding
-After executing the staged unsigned binary, the attacker copied the executable into a Windows Startup directory. Files placed in this location are executed automatically when a user logs in, providing a simple and reliable persistence mechanism without requiring registry modification or scheduled tasks.
+After completing privilege and token manipulation activity, the attacker transferred a new unsigned executable onto CH-OPS-WKS02. The file was written directly to disk under a user-accessible path using a command-line network utility, confirming intentional post-exploitation staging rather than benign system behavior.
+
+This marks the attacker’s transition from preparation to active tool deployment.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
 | Host | ch-ops-wks02 |
-| Timestamp (UTC) | 2025-12-02T12:28:26.871Z |
+| Timestamp (UTC) | 2025-12-02T12:17:07.718Z |
 | File Name | revshell.exe |
-| File Path | C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\revshell.exe |
-| Action Type | FileRenamed |
-| File Type | PortableExecutable |
-| Initiating Process | dllhost.exe |
+| Action Type | FileCreated |
+| File Path | C:\Users\chadmin\revshell.exe |
+| Initiating Process | curl.exe |
 | Initiating Account | chadmin |
-| Integrity Level | High |
+| File Type | PortableExecutable |
+| File Signature | Unsigned |
 
 ### 💡 Why it matters
-Startup folder persistence is a low-friction, high-reliability technique commonly used after initial compromise to maintain access across reboots or user logons.
+Ingress tool transfer is a pivotal intrusion phase where attackers introduce custom tooling designed to bypass native defenses. Writing an unsigned executable to disk immediately after privilege manipulation confirms malicious intent and signals imminent execution and command-and-control activity.
 
-From an attack-chain perspective, this confirms:
-- The attacker transitioned from exploration and staging to long-term foothold establishment.
-- Persistence was chosen in **user context**, aligning with earlier token manipulation rather than full SYSTEM takeover.
-- The attacker favored filesystem-based persistence over noisier registry or service-based mechanisms.
-
-**MITRE ATT&CK Mapping:**
-- **TA0003 – Persistence**
-- **T1547.001 – Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder**
-
-### 🔧 KQL Query Used
-```
-let startTime = (todatetime('2025-11-25T04:14:07.0587586Z'));
-let endTime   = datetime(2025-12-15);
-DeviceFileEvents
-| where DeviceName == "ch-ops-wks02"
-| where TimeGenerated between (startTime .. endTime)
-```
-
-### 🖼️ Screenshot
-<img width="1422" height="396" alt="image" src="https://github.com/user-attachments/assets/46e5c624-6eae-4518-a8f6-8d267b70ddd9" />
+This behavior maps to **MITRE ATT&CK T1105 – Ingress Tool Transfer** and often precedes interactive control, persistence, and lateral movement.
 
 
 ### 🛠️ Detection Recommendation
 
-**Hunting Tips:**
-- Monitor `DeviceFileEvents` for `.exe` files written to:
-  - `C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\`
-  - User-level Startup folders under `AppData`
-- Correlate persistence placement with:
-  - Recent unsigned binary execution
-  - Prior outbound network activity from the same executable
-- Treat Startup-folder persistence immediately following tool execution as **post-compromise confirmation**, not an initial-access signal.
+**Hunting Tip:**  
+Hunt for `.exe` file creation events where the initiating process is a network utility such as `curl.exe`, `wget`, or `Invoke-WebRequest`. Treat unsigned executables written to user profile directories shortly after privilege escalation or defense evasion activity as high-confidence post-exploitation indicators.
 
 </details>
+
 
 ---
 
