@@ -566,6 +566,7 @@ Instead:
 This mindset helps uncover persistence even when attackers intentionally “hide behind” SYSTEM.
 
 </details>
+
 ---
 
 <details>
@@ -684,6 +685,9 @@ Early identification of probing behavior enables detection **before** escalation
 
 </details>
 
+---
+
+
 <details>
 <summary id="-flag-12">🚩 <strong>Flag 12: DEFENSE EVASION – Antivirus Exclusion Attempt</strong></summary>
 
@@ -720,6 +724,9 @@ This aligns with **MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify
 When investigating suspicious scripts, always pivot into **DeviceProcessEvents** and search for security-control modifications (e.g., `Add-MpPreference`, `Set-MpPreference`). Filter by processes spawned from the suspicious script or its parent. Attackers often wrap these commands in `cmd.exe` or logging statements to test what executes versus what is blocked. Antivirus exclusion attempts frequently precede staging or execution of additional payloads.
 
 </details>
+
+---
+
 
 <details>
 <summary id="-flag-13">🚩 <strong>Flag 13: Execution – PowerShell Encoded Command</strong></summary>
@@ -766,6 +773,9 @@ DeviceProcessEvents
 When investigating suspicious scripts, always check for PowerShell executions using `-EncodedCommand`. Use KQL to surface candidate events, but decode Base64 payloads locally when necessary—PowerShell EncodedCommand uses Unicode, which KQL does not reliably decode. Encoded execution often precedes credential access or privilege manipulation because it allows attackers to test capabilities quietly before noisier actions like exfiltration.
 
 </details>
+
+---
+
 
 <details>
 <summary id="-flag-14">🚩 <strong>Flag 14: Privilege Escalation – Token Manipulation</strong></summary>
@@ -815,6 +825,9 @@ DeviceEvents
 When a suspicious script is already confirmed, pivot immediately to `DeviceEvents` for `ProcessPrimaryTokenModified` actions tied to the same script or account. Token manipulation frequently occurs before louder actions such as credential dumping or network-based lateral movement, since attackers want stable execution privileges before expanding access.
 
 </details>
+
+---
+
 
 <details>
 <summary id="-flag-15">🚩 <strong>Flag 15: Privilege Escalation – Token Owner Identified</strong></summary>
@@ -975,6 +988,7 @@ DeviceFileEvents
 This combination strongly indicates post-exploitation tooling deployment rather than legitimate administration.
 
 </details>
+
 ---
 
 <details>
@@ -1035,6 +1049,9 @@ At this stage:
 This execution event confirms the attacker has moved beyond simulation and into hands-on tooling deployment.
 
 </details>
+
+---
+
 
 <details>
 <summary id="-flag-19">🚩 <strong>Flag 19: External Command-and-Control Connection Attempt</strong></summary>
@@ -1102,6 +1119,9 @@ This flag represents a clear pivot from execution into active attacker control o
 
 </details>
 
+---
+
+
 <details>
 <summary id="-flag-20">🚩 <strong>Flag 20: Persistence via Startup Folder Placement</strong></summary>
 
@@ -1167,7 +1187,9 @@ DeviceFileEvents
 This flag confirms the attacker transitioned from execution into **durable access** on the host.
 
 </details>
+
 ---
+
 <details>
 <summary id="-flag-21">🚩 <strong>Flag 21: Remote Session Source Device Identification</strong></summary>
 
@@ -1247,6 +1269,7 @@ Do not assume all non-10.x.x.x addresses represent the attacker’s true origin.
 </details>
 
 ---
+
 <details>
 <summary id="-flag-23">🚩 <strong>Flag 23: Internal Pivot Host Identified</strong></summary>
 
@@ -1471,6 +1494,9 @@ print ip_location=geo_info_from_ip_address('104.164.168.17')
 When native geo-enrichment is unavailable in Defender, analysts should enrich public IPs using external tooling or IP intelligence sources. Repeated remote access from foreign regions—especially when paired with credential abuse and remote sessions—should be treated as high-confidence intrusion indicators and correlated with authentication and persistence telemetry.
 
 </details>
+
+---
+
 
 <details>
 <summary id="-flag-28">🚩 <strong>Flag 28: First Process Launched After Attacker Logon</strong></summary>
