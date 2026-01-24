@@ -851,6 +851,8 @@ DeviceFileEvents
 
 </details>
 
+---
+
 <details>
 <summary id="-flag-17">🚩 <strong>Flag 17: External Tool Download via Dynamic Tunnel</strong></summary>
 
@@ -913,6 +915,7 @@ DeviceFileEvents
 This combination strongly indicates post-exploitation tooling deployment rather than legitimate administration.
 
 </details>
+---
 
 <details>
 <summary id="-flag-18">🚩 <strong>Flag 18: Execution of Staged Unsigned Binary</strong></summary>
@@ -1182,6 +1185,7 @@ MITRE ATT&CK:
 Do not assume all non-10.x.x.x addresses represent the attacker’s true origin. Identify CGNAT or relay ranges early, then continue pivoting to locate internal pivot hosts or later public IPs that represent the attacker’s actual source.
 
 </details>
+
 ---
 <details>
 <summary id="-flag-23">🚩 <strong>Flag 23: Internal Pivot Host Identified</strong></summary>
@@ -1228,7 +1232,9 @@ DeviceNetworkEvents
 When analyzing remote session telemetry, always enumerate distinct `InitiatingProcessRemoteSessionIP` values. Exclude the victim’s local IP and known relay ranges (such as 100.64.0.0/10). Any remaining private 10.x.x.x address likely represents an internal pivot host that must be investigated for prior compromise.
 
 </details>
+
 ---
+
 <details>
 <summary id="-flag-24">🚩 <strong>Flag 24: Initial Remote Logon Detected</strong></summary>
 
@@ -1278,7 +1284,9 @@ DeviceLogonEvents
 When tracing initial access, prioritize DeviceLogonEvents with `LogonType == Network` and `RemoteIPType == Public`. Sort ascending to find the earliest foothold, then pivot forward in time using the same account and remote session metadata.
 
 </details>
+
 ---
+
 <details>
 <summary id="-flag-25">🚩 <strong>Flag 25: External Source IP for Initial Access</strong></summary>
 
@@ -1316,7 +1324,9 @@ MITRE ATT&CK:
 Always extract and preserve the first external IP used during authentication. Even if later sessions pivot internally, this IP often represents the attacker’s true origin and is critical for containment and attribution.
 
 </details>
+
 ---
+
 <details>
 <summary id="-flag-26">🚩 <strong>Flag 26: Compromised Account Used for Initial Access</strong></summary>
 
@@ -1402,51 +1412,235 @@ When native geo-enrichment is unavailable in Defender, analysts should enrich pu
 
 </details>
 
-
-
-
-
-
-
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-28">🚩 <strong>Flag 28: First Process Launched After Attacker Logon</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the first process executed by the attacker immediately after successfully logging into CH-OPS-WKS02, revealing their initial post-authentication action.
 
 ### 📌 Finding
-<High-level description of the activity>
+Following the attacker’s first suspicious logon using the `chadmin` account, the earliest recorded process execution was `Explorer.EXE`. This indicates the attacker established an interactive desktop session rather than immediately launching command-line tooling.
 
 ### 🔍 Evidence
 
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-11-23T03:08:52.8019717Z |
+| AccountName | chadmin |
+| Process Executed | Explorer.EXE |
+| Initiating Process | userinit.exe |
+| Session Type | Interactive |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+The execution of `Explorer.EXE` as the first post-logon process strongly indicates **interactive access** (e.g., RDP or GUI-based remote tooling), not automated malware execution.
+
+This matters because:
+- It confirms **hands-on-keyboard activity**
+- It explains later GUI-driven actions (file browsing, manual execution, staging)
+- It supports earlier evidence of remote session metadata
+
+**MITRE ATT&CK Mapping:**  
+- **TA0001 – Initial Access**  
+- **T1078 – Valid Accounts**  
+- **TA0002 – Execution**
+
+Understanding whether an attacker begins with interactive access versus scripted execution helps defenders prioritize logon telemetry, session correlation, and user behavior analytics.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```
+let startTime = todatetime(todatetime('2025-11-23T03:08:31.1849379Z'));
+let endTime   = datetime(2025-12-15);
+DeviceProcessEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where AccountName contains "chadmin"
+| where InitiatingProcessAccountName contains "chadmin"
+| project TimeGenerated, AccountName, InitiatingProcessAccountName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="925" height="162" alt="image" src="https://github.com/user-attachments/assets/a3aedfa4-36d7-4a6d-bed2-545623c5b582" />
+
 
 ### 🛠️ Detection Recommendation
 
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+When investigating suspicious logons, always pivot immediately into `DeviceProcessEvents` and identify the **first process executed after authentication**. Early execution of `Explorer.EXE` often signals an attacker intending to manually explore the system before deploying tooling or escalating privileges.
 
 </details>
 
 ---
 
-<!-- Duplicate Flag 1 section for Flags 2–20 -->
+
+<details>
+<summary id="-flag-29">🚩 <strong>Flag 29: First File Accessed After Attacker Logon</strong></summary>
+
+### 🎯 Objective
+Identify the first file the attacker accessed immediately after logging into CH-OPS-WKS02 to understand their initial objective and intent.
+
+### 📌 Finding
+Shortly after establishing an interactive session, the attacker opened a text file containing user credential information using Notepad. This indicates immediate reconnaissance focused on credential discovery rather than system configuration or tooling.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-11-23T03:11:00.6981995Z |
+| AccountName | chadmin |
+| File Accessed | C:\Users\chadmin\Documents\CH-OPS-WKS02 user-pass.txt |
+| Process | NOTEPAD.EXE |
+| Parent Process | Explorer.EXE |
+
+### 💡 Why it matters
+This activity confirms **credential discovery as the attacker’s first post-logon objective**.
+
+Key implications:
+- The attacker already had interactive access and immediately sought stored credentials
+- The use of `NOTEPAD.EXE` reinforces hands-on-keyboard behavior
+- The filename strongly suggests plaintext credential storage, which accelerates lateral movement and privilege escalation
+
+**MITRE ATT&CK Mapping:**  
+- **TA0006 – Credential Access**  
+- **T1552.001 – Credentials in Files**  
+- **TA0001 – Initial Access**
+
+This explains how the attacker was later able to pivot accounts and escalate activity without brute force or exploitation.
+
+### 🖼️ Screenshot
+<img width="1042" height="163" alt="image" src="https://github.com/user-attachments/assets/da7d5e1a-88ae-495c-873b-435cb27b274c" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+After identifying an interactive attacker logon, always hunt for **early GUI-based file access** (Notepad, Explorer, Word). Attackers often search for credential notes, password files, or documentation before executing any tools.
+
+</details>
+
+
+---
+
+
+<details>
+<summary id="-flag-30">🚩 <strong>Flag 30: Attacker Action After Reading Credential File</strong></summary>
+
+### 🎯 Objective
+Determine the attacker’s immediate next action after accessing the credential file to understand how they began leveraging the discovered information.
+
+### 📌 Finding
+Within seconds of opening the credential file, the attacker executed `ipconfig.exe` via PowerShell. This indicates the attacker transitioned from credential discovery into local network reconnaissance.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-11-23T03:11:45.1631084Z |
+| AccountName | chadmin |
+| Process Executed | ipconfig.exe |
+| Parent Process | powershell.exe |
+| Execution Context | Interactive user session |
+
+### 💡 Why it matters
+This behavior demonstrates a **classic attacker workflow**:
+
+1. Gain access  
+2. Discover credentials  
+3. Immediately enumerate the local network environment  
+
+Running `ipconfig.exe` allows the attacker to:
+- Identify local IP address and subnet
+- Understand network segmentation
+- Plan lateral movement or pivoting targets
+
+This confirms the attacker was preparing for **lateral movement**, not performing benign troubleshooting.
+
+**MITRE ATT&CK Mapping:**  
+- **TA0007 – Discovery**  
+- **T1016 – System Network Configuration Discovery**
+
+This step bridges credential access with subsequent internal reconnaissance and account pivoting.
+
+### 🔧 KQL Query Used
+```
+let startTime = todatetime(todatetime('2025-11-23T03:11:00.6981995Z'));
+let endTime   = datetime(2025-12-15);
+DeviceProcessEvents
+| where DeviceName == "ch-ops-wks02"
+| where TimeGenerated between (startTime .. endTime)
+| where AccountName contains "chadmin"
+| where InitiatingProcessAccountName contains "chadmin"
+| project TimeGenerated, AccountName, InitiatingProcessAccountName, ProcessCommandLine, InitiatingProcessCommandLine
+| order by TimeGenerated asc
+```
+### 🖼️ Screenshot
+<img width="864" height="164" alt="image" src="https://github.com/user-attachments/assets/16265c45-4615-4a62-9f97-7e63c75d73d2" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+After credential file access, immediately hunt for **discovery commands** (`ipconfig`, `whoami`, `net user`, `nltest`) executed by the same account or session. This sequence strongly indicates an attacker transitioning from access to expansion.
+
+</details>
+
+
+---
+
+
+<details>
+<summary id="-flag-31">🚩 <strong>Flag 31: Account Targeted After Initial Reconnaissance</strong></summary>
+
+### 🎯 Objective
+Identify which user account the attacker interacted with immediately after completing initial local reconnaissance, indicating the next stage of credential-focused activity.
+
+### 📌 Finding
+Following network enumeration and environment discovery, the attacker queried detailed information about the `ops.maintenance` account using the `net user` command. This indicates the attacker had identified the account as a potential privilege or persistence target.
+
+### 🔍 Evidence
+
+| Field | Value |
+|------|-------|
+| Host | ch-ops-wks02 |
+| Timestamp (UTC) | 2025-11-23T03:13:02.4486228Z |
+| AccountName | chadmin |
+| Command Executed | net.exe user ops.maintenance |
+| Parent Process | chadmin interactive session |
+| Execution Context | User-initiated reconnaissance |
+
+### 💡 Why it matters
+This action represents **targeted account reconnaissance**, not generic enumeration.
+
+By running `net user ops.maintenance`, the attacker was likely:
+- Checking group memberships
+- Assessing password policy or expiration
+- Identifying whether the account had elevated privileges
+- Evaluating suitability for persistence or lateral movement
+
+This confirms intent to **pivot to another user account** rather than remain within the initially compromised context.
+
+**MITRE ATT&CK Mapping:**  
+- **TA0006 – Credential Access**  
+- **T1087.001 – Account Discovery: Local Account**
+
+This step directly follows credential discovery and network reconnaissance, forming a clean and realistic attacker progression.
+
+
+### 🖼️ Screenshot
+<img width="763" height="162" alt="image" src="https://github.com/user-attachments/assets/24487a86-2b8f-457d-bb72-9b443d040d0c" />
+
+
+### 🛠️ Detection Recommendation
+
+**Hunting Tip:**  
+When attackers enumerate a *specific* user account shortly after recon activity, treat it as a strong signal of imminent credential abuse or account pivoting. Correlate `net user`, `whoami`, and token modification events within the same session.
+
+</details>
+
+
 
 ---
 
