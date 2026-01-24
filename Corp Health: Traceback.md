@@ -11,14 +11,14 @@
 
 
 
-# 🛡️ Threat Hunt Report – <Hunt Name>
+# 🛡️ Threat Hunt Report – CorpHealth Maintenance Script Intrusion
 
 ---
 
 ## 📌 Executive Summary
 
-<Brief, high-level overview of the threat hunt.  
-Answer what happened, why it matters, and what was discovered in 3–4 sentences.>
+This threat hunt uncovered a multi-stage intrusion on the workstation **CH-OPS-WKS02**, initiated through suspicious off-hours activity tied to a unique “maintenance” PowerShell script. What initially appeared to be routine operational behavior was revealed to be attacker-controlled execution that progressed through beaconing, credential access simulation, privilege manipulation, defense evasion, tool staging, persistence, and outbound command-and-control.  
+The investigation confirmed deliberate malicious intent rather than benign administrative activity, culminating in the deployment of a reverse shell delivered via an external tunneling service. This hunt highlights how attackers can successfully masquerade as operational tooling to evade early detection and establish durable access.
 
 ---
 
@@ -32,9 +32,15 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 ## 🧭 Scope & Environment
 
-- **Environment:** <Placeholder>  
-- **Data Sources:** <Placeholder>  
-- **Timeframe:** <YYYY-MM-DD → YYYY-MM-DD>  
+- **Environment:** CorpHealth Windows endpoint environment (Azure-hosted virtual workstations)  
+- **Data Sources:** Microsoft Defender for Endpoint Advanced Hunting  
+  - DeviceProcessEvents  
+  - DeviceNetworkEvents  
+  - DeviceFileEvents  
+  - DeviceRegistryEvents  
+  - DeviceEvents  
+  - DeviceLogonEvents  
+- **Timeframe:** 2025-11-21 → 2025-12-02  
 - **Link:** https://docs.google.com/forms/d/e/1FAIpQLSfXHDP8VZmGdKF5YCNWTKd8Sg16zLMqRC1262OV_poqomySjQ/viewform
 
 ---
@@ -64,9 +70,21 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
   - [🚩 Flag 18](#-flag-18)
   - [🚩 Flag 19](#-flag-19)
   - [🚩 Flag 20](#-flag-20)
+  - [🚩 Flag 21](#-flag-21)
+  - [🚩 Flag 22](#-flag-22)
+  - [🚩 Flag 23](#-flag-23)
+  - [🚩 Flag 24](#-flag-24)
+  - [🚩 Flag 25](#-flag-25)
+  - [🚩 Flag 26](#-flag-26)
+  - [🚩 Flag 27](#-flag-27)
+  - [🚩 Flag 28](#-flag-28)
+  - [🚩 Flag 29](#-flag-29)
+  - [🚩 Flag 30](#-flag-30)
+  - [🚩 Flag 31](#-flag-31)
 - [🚨 Detection Gaps & Recommendations](#-detection-gaps--recommendations)
 - [🧾 Final Assessment](#-final-assessment)
 - [📎 Analyst Notes](#-analyst-notes)
+
 
 ---
 
@@ -76,32 +94,38 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 ---
 
-## 🧬 MITRE ATT&CK Summary
+## 🔥 Executive MITRE ATT&CK Heatmap (Condensed)
 
-| Flag | Technique Category | MITRE ID | Priority |
-|-----:|-------------------|----------|----------|
-| 1 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 2 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 3 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 4 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 5 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 6 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 7 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 8 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 9 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 10 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 11 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 12 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 13 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 14 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 15 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 16 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 17 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 18 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 19 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 20 | <Placeholder> | <Placeholder> | <Placeholder> |
+This heatmap summarizes attacker capability maturity observed during the hunt.
+It aggregates all flags into high-level ATT&CK phases to show **where the adversary invested effort** and **where detection mattered most**.
+
+| ATT&CK Phase | Techniques Observed | Severity | Analyst Notes |
+|--------------|-------------------|----------|---------------|
+| **Initial Access** | Valid Accounts (T1078), Remote Logon | 🔴 Critical | Attacker authenticated using legitimate credentials from an external IP, bypassing perimeter defenses entirely. |
+| **Execution** | PowerShell, Encoded Commands, User Execution | 🔴 Critical | Heavy reliance on PowerShell for execution, obfuscation, and tool delivery. Indicates hands-on-keyboard activity. |
+| **Persistence** | Run Keys, Startup Folder, Scheduled Tasks | 🔴 Critical | Multiple persistence mechanisms tested, including ephemeral Run keys and Startup folder placement. |
+| **Privilege Escalation** | Token Manipulation, Config Adjust Probes | 🔴 Critical | Attacker actively probed and modified access tokens, confirming escalation intent rather than accidental misconfig. |
+| **Defense Evasion** | AV Exclusion Attempts, Obfuscation | 🔴 High | Explicit attempt to exclude folders from Defender scanning prior to tool execution. |
+| **Credential Access** | Registry Inspection, Token SID Targeting | 🔴 High | Credential and token-related telemetry indicates preparation for reuse or lateral movement. |
+| **Discovery** | Process Enumeration, File Access, Recon | 🟠 Medium | Early post-logon behavior focused on situational awareness and credential discovery. |
+| **Lateral Movement** | Remote Sessions, Internal Pivoting | 🔴 High | Evidence of internal pivoting through Azure network ranges and multiple session sources. |
+| **Command & Control** | ngrok Tunnel, Non-Standard Ports | 🔴 Critical | External dynamic tunneling infrastructure used to establish C2, bypassing static IP detection. |
+| **Collection / Staging** | Local File Staging, Duplicate Artifacts | 🟠 Medium | Files staged across multiple directories prior to tool execution and persistence. |
 
 ---
+
+### 🧠 Executive Takeaway
+
+This adversary demonstrated **full-spectrum intrusion capability**:
+- Legitimate access
+- Interactive execution
+- Privilege manipulation
+- Defense evasion
+- External command-and-control
+
+This was **not automated malware**.  
+This was **an operator-driven intrusion**.
+
 
 ## 🔍 Flag Analysis
 
