@@ -1299,30 +1299,99 @@ Investigate the remote IP 54.83.21.156 across all network telemetry to identify 
 
 ---
 
+---
+
 ## 🚨 Detection Gaps & Recommendations
 
 ### Observed Gaps
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+
+* **Insufficient Remote Session Monitoring:** Remote sessions from internal IP 192.168.0.110 to multiple systems (sys1-dept, main1-srvr) went undetected despite serving as the primary pivot point for lateral movement. No alerting existed for unusual remote session patterns or cross-departmental access from IT/Finance systems to HR data repositories.
+
+* **Lack of Sensitive File Access Correlation:** Multiple SensitiveFileRead events for bonus matrices and employee reviews across different systems were not correlated into a unified detection. The organization lacked behavioral analytics to identify the same employee data (JavierR) being accessed repeatedly across unrelated systems within short timeframes.
+
+* **Social Engineering Filename Evasion:** Files and scheduled tasks using HR-related naming conventions (PayrollSupportTool.ps1, BonusReviewAssist, BonusMatrix_Draft_v3.xlsx) successfully evaded detection. No content inspection or behavioral analysis existed to validate whether "payroll" or "bonus" themed scripts were legitimate administrative tools.
+
+* **Off-Hours Activity Baseline Gaps:** Critical operations occurring between 3:00-7:00 AM local time (file staging, log clearing, server access) did not trigger anomaly detection. The organization lacked time-of-day baselines for administrative accounts and service accounts accessing sensitive data.
+
+* **Log Clearing Detection Failure:** The use of `wevtutil.exe` to clear PowerShell operational logs (T1070.001) was not detected in real-time, allowing the attacker to eliminate forensic evidence. No compensating controls existed such as centralized log forwarding or immutable log storage.
+
+* **Connectivity Testing Service Blind Spot:** Repeated connections to httpbin.org and example.com for exfiltration pre-flight testing were not flagged as suspicious. Network monitoring lacked signatures for common testing/debugging services frequently abused by attackers.
+
+* **Dual Persistence Mechanism Oversight:** The establishment of both registry Run keys and scheduled tasks within 20 minutes was not correlated as a persistence layering technique. Each mechanism was potentially logged but not analyzed as part of a coordinated attack pattern.
+
+* **Cross-Department Lateral Movement Visibility:** Movement from IT Helpdesk (YE-HELPDESKTECH) to HR data, and Finance workstations (YE-FINANCEREVIE) accessing HR servers, violated implicit trust boundaries but generated no alerts. Network segmentation and lateral movement detection were insufficient.
+
+---
 
 ### Recommendations
-- <Placeholder>
-- <Placeholder>
-- <Placeholder>
+
+#### **Immediate (0-30 days)**
+
+* **Deploy Centralized Log Forwarding:** Implement immediate forwarding of Security, System, and PowerShell logs to SIEM or centralized logging platform with immutable storage. Prioritize PowerShell operational logs (Event ID 4104) to prevent log clearing from eliminating evidence.
+
+* **Create High-Fidelity Detections:**
+  - Alert on `wevtutil.exe` execution with "cl" or "clear-log" parameters (T1070.001)
+  - Alert on SensitiveFileRead events for files containing "bonus", "salary", "compensation" outside business hours
+  - Alert on remote sessions from IT/Finance systems accessing HR file shares or servers
+  - Alert on connections to httpbin.org, example.com, webhook.site from production systems
+
+* **Implement Emergency Credential Rotation:** Force password resets for account 5y51-d3p7 and all accounts that authenticated from 192.168.0.110. Conduct forensic review of accounts with access to compromised systems to identify potential credential harvesting.
+
+* **Enable Enhanced PowerShell Logging:** Deploy PowerShell script block logging and module logging across all endpoints. Configure alerts for execution policy bypass (`-ExecutionPolicy Bypass`) combined with scripts from user-writable directories.
+
+#### **Short-Term (30-90 days)**
+
+* **Deploy Behavioral Analytics for Sensitive Data:** Implement user and entity behavior analytics (UEBA) to baseline normal access patterns for HR data repositories. Alert on deviations including: off-hours access, cross-departmental access, rapid sequential file access, same-file access from multiple systems.
+
+* **Implement File Access Correlation:** Create detection logic that correlates SensitiveFileRead events across systems within configurable time windows (e.g., same filename accessed on 3+ systems within 24 hours). Prioritize files containing PII, compensation, or executive content.
+
+* **Network Segmentation Enforcement:** Implement microsegmentation or firewall rules preventing IT Helpdesk and Finance workstations from directly accessing HR file servers. Require privileged access workstations (PAWs) or jump boxes for cross-departmental administrative tasks.
+
+* **Deploy EDR Behavioral Detections:** Configure endpoint detection and response (EDR) platform to alert on:
+  - Multiple persistence mechanisms created within short time windows
+  - Archive file creation followed by network connections to public IPs
+  - Notepad/Explorer execution of files from network shares or unusual directories
+  - Registry Run key modifications outside approved change windows
+
+#### **Long-Term (90+ days)**
+
+* **Implement Data Loss Prevention (DLP):** Deploy DLP controls on endpoints and network egress points to detect and block exfiltration of files containing sensitive keywords (bonus, salary, SSN patterns, employee IDs). Prioritize monitoring of archive file transfers and uploads to cloud storage services.
+
+* **Establish Privileged Access Management (PAM):** Implement just-in-time privileged access for administrative accounts. Require MFA and session recording for any account accessing HR, Finance, or Executive data repositories. Eliminate persistent administrative rights from standard user accounts.
+
+* **Deploy Deception Technology:** Place honeypot files (fake bonus matrices, employee records) in HR directories to detect unauthorized access. Implement honeytoken credentials in registry/memory that trigger alerts if accessed or used.
+
+* **Conduct Adversary Emulation Exercises:** Perform purple team exercises simulating this attack pattern (credential compromise → lateral movement → data staging → exfiltration prep) to validate detection coverage and refine alerting thresholds. Test both technical controls and SOC analyst response procedures.
+
+* **Implement Zero Trust Architecture:** Transition to zero-trust principles requiring continuous authentication and authorization for all resource access. Remove implicit trust between departmental systems and implement least-privilege access controls for all data repositories.
+
+* **Enhance Security Awareness Training:** Develop targeted training for HR, Finance, and IT staff on social engineering techniques, suspicious file naming patterns, and proper handling of sensitive data. Include specific scenarios around fake "payroll support" or "bonus review" tools.
 
 ---
 
 ## 🧾 Final Assessment
 
-<Concise executive-style conclusion summarizing risk, attacker sophistication, and defensive posture.>
+This intrusion represents a **sophisticated, intelligence-driven data theft operation** executed by a capable threat actor with clear objectives, operational discipline, and advanced tradecraft. The attacker successfully compromised five systems across three departments over a 72-hour period, systematically identifying, accessing, and staging the organization's most sensitive HR compensation data while evading real-time detection.
 
----
+**Risk Severity: CRITICAL**
 
-## 📎 Analyst Notes
+The compromise of approved bonus matrices, employee performance reviews, and candidate packages creates significant business risk including competitive intelligence loss, regulatory exposure under data protection laws, employee privacy violations, and potential for follow-on extortion or ransomware attacks. The attacker's establishment of dual persistence mechanisms and demonstrated ability to clear forensic logs indicates intent for long-term access rather than opportunistic data theft.
 
-- Report structured for interview and portfolio review  
-- Evidence reproducible via advanced hunting  
-- Techniques mapped directly to MITRE ATT&CK  
+**Attacker Sophistication: ADVANCED**
+
+The adversary demonstrated capabilities consistent with sophisticated cybercrime groups, corporate espionage actors, or insider threats with technical expertise. Key indicators of advanced capability include: phased operations over multiple days, social engineering of filenames and task names to evade detection, operational security through off-hours activity, systematic lateral movement via internal pivot infrastructure, anti-forensic log clearing, and exfiltration pre-flight testing. This was not automated malware but rather hands-on-keyboard activity by a skilled operator.
+
+**Defensive Posture: INSUFFICIENT**
+
+Current defensive capabilities failed to detect or prevent this intrusion at multiple critical junctures. Detection gaps exist across initial access, lateral movement, persistence, data collection, and exfiltration preparation phases. The absence of behavioral analytics, sensitive data access monitoring, cross-system correlation, and real-time alerting on anti-forensic activity created an environment where a determined attacker could operate for days without interdiction.
+
+**Immediate Priorities:**
+
+1. **Containment:** Assume data exfiltration occurred and notify affected stakeholders, legal counsel, and potentially regulatory bodies
+2. **Eradication:** Complete credential rotation, persistence removal, and forensic imaging of all compromised systems
+3. **Recovery:** Implement emergency detections for similar attack patterns while longer-term improvements are developed
+4. **Lessons Learned:** Conduct comprehensive post-incident review to identify root causes and systemic defensive weaknesses
+
+The organization must treat this incident as a watershed moment requiring fundamental improvements to identity and access management, data protection controls, network segmentation, and security monitoring capabilities. Without significant investment in detection engineering, behavioral analytics, and privileged access controls, similar intrusions will continue to succeed.
 
 ---
