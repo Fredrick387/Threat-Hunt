@@ -432,76 +432,98 @@ Monitor for connections to benign testing domains (example.com, example.org, htt
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-8">🚩 <strong>Flag 8: Registry-Based Persistence</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify evidence of persistence established via a user Run key.
 
 ### 📌 Finding
-<High-level description of the activity>
+Registry modification detected in the HKEY_CURRENT_USER Run key on sys1-dept, establishing persistence for the malicious PayrollSupportTool.ps1 script. The registry value was set to execute the PowerShell payload with execution policy bypass on every user logon.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:27:59.603 AM |
+| InitiatingProcessAccountName | 5y51-d3p7 |
+| ActionType | RegistryValueSet |
+| RegistryKey | HKEY_CURRENT_USER\S-1-5-21-805396643-3920266184-3816603331-500\SOFTWARE\Microsoft\Windows\CurrentVersion\Run |
+| RegistryValueData | powershell.exe -ExecutionPolicy Bypass -File "C:\Users\5y51-D3p7\Downloads\PayrollSupportTool.ps1" |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1547.001 (Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder)**. Registry Run keys are one of the most common persistence mechanisms on Windows systems, ensuring the malicious script executes automatically whenever the compromised user logs on. The attacker placed the exact command used during initial execution into the persistence mechanism, maintaining the execution policy bypass to evade PowerShell restrictions. This occurs 28 seconds after the connectivity test, indicating the attacker followed a methodical checklist: stage data, test connectivity, establish persistence, then proceed with exfiltration. The use of the user-specific SID in the registry path ensures persistence survives across sessions for this specific account.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-04T06:27:10.6828355Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceRegistryEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where ActionType in ("RegistryValueSet", "RegistryKeyCreated")
+| where RegistryKey has "Run"
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, ActionType, RegistryKey, RegistryValueData
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="929" height="193" alt="image" src="https://github.com/user-attachments/assets/d7c56536-a0dd-4c10-b195-d6e387b227b4" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Monitor all RegistryValueSet actions under Run and RunOnce keys in both HKEY_CURRENT_USER and HKEY_LOCAL_MACHINE hives. Hunt for registry values containing PowerShell commands with execution policy bypasses, encoded commands, or scripts executing from user-writable directories like Downloads or Temp. Query for registry modifications occurring shortly after malicious script execution to identify persistence establishment patterns. Stack count RegistryValueData containing "powershell", "-enc", "-exec bypass", or suspicious file paths. Correlate registry persistence with subsequent logon events to identify when the persistence mechanism successfully triggered.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-9">🚩 <strong>Flag 9: Scheduled Task Persistence</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Confirm a scheduled task was created or used to automate recurring execution.
 
 ### 📌 Finding
-<High-level description of the activity>
+Scheduled task creation detected on sys1-dept using schtasks.exe to establish daily execution of the malicious PayrollSupportTool.ps1 script. The task named "BonusReviewAssist" was configured to run daily with execution policy bypass, ensuring persistent access beyond the current session.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:47:40.825 AM |
+| AccountName | 5y51-d3p7 |
+| ProcessCommandLine | "schtasks.exe" /Create /SC DAILY /TN BonusReviewAssist /TR "powershell.exe -ExecutionPolicy Bypass -File C:\Users\5y51-D3p7\Downloads\PayrollSupportTool.ps1" /F |
+| InitiatingProcessCommandLine | "powershell.exe" |
+| Task Name | BonusReviewAssist |
+| Schedule | DAILY |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1053.005 (Scheduled Task/Job: Scheduled Task)**. The attacker established a second persistence mechanism approximately 20 minutes after the registry Run key, demonstrating defense-in-depth from an adversary perspective. Scheduled tasks provide persistence that survives user logoff, system reboots, and even if the registry Run key is discovered and removed. The task name "BonusReviewAssist" employs social engineering to appear legitimate within a corporate environment, particularly during year-end bonus cycles. The `/F` flag indicates the attacker forcefully overwrote any existing task with the same name. The daily schedule ensures the malicious script executes repeatedly, maintaining access and potentially exfiltrating updated data on an ongoing basis.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-04T06:27:10.6828355Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceProcessEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == firstCompromisedDevice
+| where AccountName == badUser
+| where ProcessCommandLine has "schtasks"
+| project TimeGenerated, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="937" height="315" alt="image" src="https://github.com/user-attachments/assets/a98a4c91-7d45-4ee1-8067-2fabc624c610" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Monitor for schtasks.exe executions with `/Create` parameter, especially when initiated by PowerShell or script interpreters. Hunt for scheduled tasks configured to execute PowerShell with execution policy bypasses or scripts from user-writable directories. Query Security event logs (Event ID 4698) for scheduled task creation events. Stack count task names across the environment to identify suspicious naming patterns that mimic legitimate services. Correlate scheduled task creation with registry persistence mechanisms occurring within the same timeframe to identify layered persistence strategies. Use `Get-ScheduledTask` or query the Task Scheduler service to enumerate all tasks and identify those executing from non-standard paths.
 
 </details>
 
