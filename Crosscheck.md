@@ -239,161 +239,195 @@ Hunt for PowerShell executions with `-ExecutionPolicy Bypass`, `-ep bypass`, or 
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-4">🚩 <strong>Flag 4: System Reconnaissance Initiation</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the first reconnaissance action used to gather host and user context.
 
 ### 📌 Finding
-<High-level description of the activity>
+Execution of whoami.exe detected on sys1-dept with the /all parameter, representing the attacker's initial reconnaissance command to enumerate security context. This command provides comprehensive information about the current user's privileges, group memberships, and security identifiers.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:12:03.789 AM |
+| DeviceName | sys1-dept |
+| ProcessCommandLine | "whoami.exe" /all |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity aligns with **MITRE ATT&CK T1033 (System Owner/User Discovery)** and **T1069 (Permission Groups Discovery)**. The `whoami /all` command is a standard post-exploitation reconnaissance technique used to assess current privilege level, group memberships, security tokens, and integrity levels. This information guides the attacker's next moves, including privilege escalation paths, lateral movement targets, and understanding what actions the compromised account can perform. The timing approximately 5 minutes prior to the PowerShell script execution suggests this was executed manually by the attacker to assess the environment before deploying additional tooling.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T06:27:31.1857946Z');
+let endTime = todatetime('2025-12-03T08:29:21.12468Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceProcessEvents
+| where DeviceName == firstCompromisedDevice
+| where AccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| where ProcessCommandLine has_any ("whoami", "net user", "net group", "query user")
+| project TimeGenerated, DeviceName, ProcessCommandLine
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img src="uploads/1769915438765_image.png">
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Hunt for native Windows reconnaissance binaries (whoami.exe, net.exe, ipconfig.exe, systeminfo.exe, tasklist.exe) executed within remote sessions or by service accounts. Look for rapid sequential execution of multiple discovery commands within short time windows, indicating scripted or manual enumeration. Correlate whoami execution with subsequent privilege escalation attempts or lateral movement activity. Query for command-line parameters like /all, /priv, or /groups that indicate thorough enumeration. Stack count executions by AccountName to identify accounts performing abnormal discovery activity.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-5">🚩 <strong>Flag 5: Sensitive Bonus-Related File Exposure</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the first sensitive year-end bonus-related file that was accessed during exploration.
 
 ### 📌 Finding
-<High-level description of the activity>
+FileCreated event detected on sys1-dept for a file named "BonusMatrix_Draft_v3.xlsx.lnk" initiated by Explorer.exe under the compromised account. This shortcut file indicates the attacker discovered and interacted with sensitive compensation data, creating a link that could be used for later access or as evidence of file discovery.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:24:42.960 AM |
+| ActionType | FileCreated |
+| FileName | BonusMatrix_Draft_v3.xlsx.lnk |
+| InitiatingProcess | Explorer.exe |
+| InitiatingProcessAccountName | 5y51-d3p7 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1083 (File and Directory Discovery)** and indicates progression toward **T1005 (Data from Local System)**. The creation of a .lnk (shortcut) file suggests interactive browsing behavior through Windows Explorer, indicating hands-on-keyboard activity rather than automated tooling. The file name "BonusMatrix_Draft_v3.xlsx" clearly contains sensitive compensation information that would be high-value for corporate espionage, insider threats, or ransomware operators seeking leverage. The "Draft_v3" naming convention suggests this is working documentation that may contain unredacted or preliminary bonus allocation data. This marks the transition from system reconnaissance to targeted data discovery.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01T06:27:31.1857946Z');
+let endTime = todatetime('2025-12-10T08:29:21.12468Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceFileEvents
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| project TimeGenerated, ActionType, DeviceName, FileName, InitiatingProcessCommandLine, InitiatingProcessId, InitiatingProcessUniqueId
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="782" height="221" alt="image" src="https://github.com/user-attachments/assets/09c92ac0-7dae-4acd-8c6e-391ffd6bc749" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Query DeviceFileEvents for access to files containing sensitive keywords (bonus, salary, compensation, payroll, executive) by the compromised account. Look for FileCreated actions involving .lnk files as indicators of interactive file browsing. Pivot to identify the full path of the original BonusMatrix_Draft_v3.xlsx file and check for subsequent FileRead, FileModified, or FileCopied events. Hunt for file staging activity where sensitive documents are copied to temporary directories or compressed into archives. Review network telemetry for potential exfiltration of this file to external IPs or cloud storage services.
 
 </details>
-
 ---
 
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-6">🚩 <strong>Flag 6: Data Staging Activity Confirmation</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Confirm that sensitive data was prepared for movement by staging into an export/archive output.
 
 ### 📌 Finding
-<High-level description of the activity>
+FileCreated event detected for "export_stage.zip" on sys1-dept, initiated by powershell.exe under the compromised account. This archive file represents data staging activity where the attacker packaged sensitive files for exfiltration, confirming progression from discovery to collection and preparation for data theft.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:27:10.682 AM |
+| ActionType | FileCreated |
+| FileName | export_stage.zip |
+| InitiatingProcessCommandLine | "powershell.exe" |
+| InitiatingProcessId | 5632 |
+| InitiatingProcessUniqueId | 2533274790396713 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1560.001 (Archive Collected Data: Archive via Utility)** and **T1074.001 (Data Staged: Local Data Staging)**. The creation of a ZIP archive with the explicit name "export_stage" demonstrates clear intent to exfiltrate data. Staging files into compressed archives serves multiple adversary objectives: reducing file size for faster transfer, evading DLP controls that may not inspect compressed content, and consolidating multiple files into a single exfiltration package. The PowerShell initiation indicates the attacker used scripting to automate the compression process, likely part of the PayrollSupportTool.ps1 payload executed earlier. This marks a critical escalation from reconnaissance and discovery to active data theft preparation.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01T06:27:31.1857946Z');
+let endTime = todatetime('2025-12-10T08:29:21.12468Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceFileEvents
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| where FileName endswith ".zip" or FileName endswith ".rar" or FileName endswith ".7z"
+| project TimeGenerated, ActionType, DeviceName, FileName, InitiatingProcessCommandLine, InitiatingProcessId, InitiatingProcessUniqueId
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="791" height="213" alt="image" src="https://github.com/user-attachments/assets/d329e2e9-e0e4-4570-a7ee-1529b296caf6" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Hunt for archive file creation (.zip, .rar, .7z, .tar.gz) in non-standard locations or with suspicious naming patterns (export, stage, data, backup, temp). Correlate the InitiatingProcessUniqueId 2533274790396713 with DeviceProcessEvents to identify all actions taken by this specific PowerShell instance. Query DeviceFileEvents for files added to the archive immediately before creation to identify what sensitive data was packaged. Monitor for subsequent file transfer activity involving export_stage.zip via network connections, cloud uploads, or removable media. Use FileProfile enrichment to determine if the archive still exists and retrieve it for forensic analysis.
 
 </details>
-
 ---
+
+<details>
+<summary id="-flag-7">🚩 <strong>Flag 7: Outbound Connectivity Test</strong></summary>
+
+### 🎯 Objective
+Confirm that outbound access was tested prior to any attempted transfer.
+
+### 📌 Finding
+PowerShell-initiated network connection detected to example.com immediately following data staging activity. The connection occurred 21 seconds after the creation of export_stage.zip, confirming the attacker tested outbound connectivity before attempting exfiltration.
+
+### 🔍 Evidence
+| Field | Value |
+|------|-------|
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:27:31.185 AM |
+| InitiatingProcessFileName | powershell.exe |
+| InitiatingProcessCommandLine | "powershell.exe" |
+| RemoteIP | 23.215.0.136 |
+| RemoteUrl | example.com |
+
+### 💡 Why it matters
+This activity represents **MITRE ATT&CK T1016 (System Network Configuration Discovery)** and pre-exfiltration testing behavior. The use of example.com as a connectivity test target is significant because it is a benign, widely-accessible domain specifically reserved for documentation and testing purposes (RFC 2606). Attackers commonly use such domains to verify outbound network access without triggering threat intelligence alerts that malicious infrastructure would generate. The 21-second gap between data staging and connectivity testing demonstrates methodical, hands-on-keyboard behavior where the attacker validated the exfiltration path before transmitting sensitive data. This pre-flight check confirms the attacker's operational security awareness and intent to exfiltrate the staged archive.
+
+### 🔧 KQL Query Used
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-04T06:27:10.6828355Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceNetworkEvents
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| where isnotempty(RemoteIPType)
+| where isnotempty(RemoteUrl)
+| project TimeGenerated, InitiatingProcessFileName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl
+| order by TimeGenerated asc
+```
+
+### 🖼️ Screenshot
+<img width="930" height="166" alt="image" src="https://github.com/user-attachments/assets/d5875cf2-0202-4f8f-b5a1-fe05c964cf05" />
+
+
+### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Monitor for connections to benign testing domains (example.com, example.org, httpbin.org, ifconfig.me) from non-administrative accounts or servers, especially when preceded by data staging activity. Hunt for PowerShell network connections that occur within short time windows after archive file creation. Correlate this connectivity test with subsequent connections to the same or different external IPs to identify the actual exfiltration destination. Stack count by RemoteUrl to identify unusual testing domains across the environment. Query for similar patterns where file archiving is followed by network connectivity tests within 1-5 minutes.
+
+</details>
 
 ---
 
