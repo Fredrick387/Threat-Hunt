@@ -610,196 +610,235 @@ Investigate the 192.168.0.110 source IP to identify what system is serving as th
 
 ---
 
+<details>
+<summary id="-flag-12">🚩 <strong>Flag 12: Performance Review Access Validation</strong></summary>
+
+### 🎯 Objective
+Confirm access to employee performance review material through user-level tooling.
+
+### 📌 Finding
+Process execution of notepad.exe detected opening the file "Review_JavierR.lnk" located in the HR\PerformanceReviews directory. The access was initiated by PowerShell under the compromised account, indicating the attacker was actively exploring employee performance review materials stored in a dedicated HR directory structure.
+
+### 🔍 Evidence
+| Field | Value |
+|------|-------|
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:25:15.628 AM |
+| DeviceName | sys1-dept |
+| AccountName | 5y51-d3p7 |
+| ProcessCommandLine | "notepad.exe" C:\Users\5y51-D3p7\HR\PerformanceReviews\Review_JavierR.lnk |
+| InitiatingProcessCommandLine | "powershell.exe" |
+
+### 💡 Why it matters
+This activity represents **MITRE ATT&CK T1083 (File and Directory Discovery)** and **T1005 (Data from Local System)**. The use of notepad.exe to open the file indicates manual, interactive exploration of the performance review directory rather than automated data collection. The file path reveals the attacker discovered a structured HR directory at `C:\Users\5y51-D3p7\HR\PerformanceReviews\`, suggesting systematic organization of sensitive personnel data on the compromised endpoint. This access occurred approximately 40 minutes after the employee review shortcut was first accessed from the remote session (YE-HELPDESKTECH), indicating the attacker returned to investigate the actual contents after initial discovery. The PowerShell initiation suggests this may have been part of a scripted enumeration routine that opened files for review.
+
+### 🔧 KQL Query Used
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-04T06:27:10.6828355Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceProcessEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == firstCompromisedDevice
+| where AccountName == badUser
+| where ProcessCommandLine contains "review"
+| project TimeGenerated, DeviceName, ProcessCommandLine, InitiatingProcessCommandLine
+```
+
+### 🖼️ Screenshot
+<img src="uploads/1769939764404_image.png">
+
+### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Monitor for notepad.exe, wordpad.exe, or other text/document viewers opening files from sensitive directories (HR, Finance, Executive, Legal). Hunt for process command lines containing paths to performance review, compensation, or personnel directories. Correlate notepad.exe executions initiated by scripting engines (PowerShell, cmd.exe) as indicators of automated reconnaissance. Query DeviceFileEvents for all files within the HR\PerformanceReviews directory to identify the full scope of accessible employee data. Look for patterns where files are opened via notepad shortly after being discovered through file browsing or search operations.
+
+</details>
+---
+
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-13">🚩 <strong>Flag 13: Approved/Final Bonus Artifact Access</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Confirm access to a finalized year-end bonus artifact with sensitive-read classification.
 
 ### 📌 Finding
-<High-level description of the activity>
+SensitiveFileRead event detected for the approved Q4 bonus matrix file "BonusMatrix_Q4_Approved.xlsx" located in the HR\Bonus2025 directory. The file was accessed by PowerShell under the compromised account, representing unauthorized access to finalized executive compensation data.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:25:39.165 AM |
+| ActionType | SensitiveFileRead |
+| FileName | BonusMatrix_Q4_Approved.xlsx |
+| FolderPath | C:\Users\5y51-D3p7\HR\Bonus2025 |
+| InitiatingProcessFileName | powershell.exe |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1005 (Data from Local System)** and represents the most critical data theft event in the attack chain. Unlike the earlier "Draft_v3" file, this is the **approved, finalized** bonus matrix containing authoritative Q4 compensation decisions. The "SensitiveFileRead" ActionType indicates this file has been tagged with Microsoft Information Protection sensitivity labels, confirming organizational awareness of its confidential nature. The PowerShell initiation suggests this was part of an automated data collection script targeting specifically labeled sensitive files. This access occurred immediately after the attacker opened performance reviews via notepad, indicating systematic progression through increasingly sensitive HR data. The approved bonus matrix represents the ultimate target for corporate espionage, insider threats, or ransomware operators seeking maximum leverage.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01');
+let endTime = todatetime('2025-12-10');
+DeviceEvents
+| where DeviceName == "sys1-dept"
+| where TimeGenerated between (startTime .. endTime)
+| where ActionType == "SensitiveFileRead"
+| project TimeGenerated, FileName, FolderPath, InitiatingProcessFileName, AdditionalFields
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="932" height="149" alt="image" src="https://github.com/user-attachments/assets/6dc10497-f2e1-4cfd-9842-b68f02d35985" />
+
 
 ### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Monitor all SensitiveFileRead events across the environment, prioritizing files with "approved", "final", or "confidential" in their names. Hunt for PowerShell or scripting engines accessing files with Microsoft Information Protection labels. Correlate SensitiveFileRead events with subsequent network connections or archive file creation to identify potential exfiltration. Query for accounts accessing multiple sensitive files within short time windows to detect bulk data collection. Implement alerts for SensitiveFileRead actions occurring outside business hours or from service accounts. Review data loss prevention (DLP) policies to ensure sensitive files trigger appropriate controls when accessed, copied, or transferred.
 
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+</details>
+---
+
+---
+
+markdown<details>
+<summary id="-flag-14">🚩 <strong>Flag 14: Candidate Archive Creation Location</strong></summary>
+
+### 🎯 Objective
+Identify where a suspicious candidate-related archive was created.
+
+### 📌 Finding
+FileCreated event detected for "Q4Candidate_Pack.zip" in the Documents directory on sys1-dept. The archive was created at the file path C:\Users\5y51-D3p7\Documents\Q4Candidate_Pack.zip, representing staged candidate recruitment data prepared for exfiltration.
+
+### 🔍 Evidence
+| Field | Value |
+|------|-------|
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:26:03.976 AM |
+| ActionType | FileCreated |
+| FileName | Q4Candidate_Pack.zip |
+| FolderPath | C:\Users\5y51-D3p7\Documents\Q4Candidate_Pack.zip |
+
+### 💡 Why it matters
+This activity represents **MITRE ATT&CK T1560.001 (Archive Collected Data: Archive via Utility)** and **T1074.001 (Data Staged: Local Data Staging)**. The Documents directory location is significant because it differs from the earlier export_stage.zip which was created in the user profile root. This separation suggests the attacker is organizing different data categories into distinct staging locations, potentially to facilitate selective exfiltration or to evade detection rules that monitor only common staging directories like Temp or Downloads. The Q4 timeframe in the filename indicates this archive targets fourth-quarter candidate hiring data, which would contain sensitive information about potential employees, compensation offers, and competitive hiring intelligence. This staging occurred immediately after the attacker accessed the approved bonus matrix file, demonstrating rapid progression from data discovery to collection and packaging.
+
+### 🔧 KQL Query Used
+```kql
+let startTime = todatetime('2025-11-01');
+let endTime = todatetime('2025-12-10');
+let firstCompromisedDevice = "sys1-dept";
+DeviceFileEvents
+| where DeviceName == firstCompromisedDevice
+| where TimeGenerated between (startTime .. endTime)
+| where FileName has_any (".zip")
+| where FileName has "candidate"
+| project TimeGenerated, FileName, ActionType, FolderPath
+```
+
+### 🖼️ Screenshot
+<img width="924" height="133" alt="image" src="https://github.com/user-attachments/assets/e6f67935-ddb1-4035-8368-d3417b48775b" />
+
+
+### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Monitor for zip file creation in user profile directories, especially Documents, Desktop, and Downloads folders. Hunt for archive files with business-related naming patterns (candidate, hiring, Q1-Q4, finance, payroll) as these indicate targeted data collection rather than benign user activity. Query for multiple archive files created within close proximity to identify systematic data staging operations. Correlate archive creation with SensitiveFileRead events to determine what sensitive data was packaged. Look for archives created in locations that differ from typical malware staging paths to detect evasion techniques.
+
+</details>
+---
+
+
+<details>
+<summary id="-flag-15">🚩 <strong>Flag 15: Outbound Transfer Attempt Timestamp</strong></summary>
+
+### 🎯 Objective
+Confirm an outbound transfer attempt occurred after staging activity.
+
+### 📌 Finding
+PowerShell-initiated network connection detected to httpbin.org (18.214.194.42) occurring 25 seconds after the Q4Candidate_Pack.zip archive was created. The connection to httpbin.org, a service commonly used for testing HTTP requests including POST operations, confirms the attacker validated data transfer capabilities before exfiltration.
+
+### 🔍 Evidence
+| Field | Value |
+|------|-------|
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:26:28.595 AM |
+| InitiatingProcessFileName | powershell.exe |
+| InitiatingProcessCommandLine | "powershell.exe" |
+| RemoteIP | 18.214.194.42 |
+| RemoteUrl | httpbin.org |
+
+### 💡 Why it matters
+This activity represents **MITRE ATT&CK T1048 (Exfiltration Over Alternative Protocol)** pre-flight testing. The connection to httpbin.org is significant because it is a legitimate HTTP request testing service that provides endpoints for testing POST, PUT, and file upload operations. Attackers commonly use httpbin.org to validate their exfiltration scripts can successfully transmit data before sending it to their actual command and control infrastructure. The 25-second gap between archive creation and this connectivity test demonstrates methodical operational security where the attacker validates the transfer mechanism immediately after packaging sensitive data. This follows the same pattern observed earlier with the example.com connectivity test, confirming the attacker's systematic approach to validating network egress before committing to data exfiltration.
+
+### 🔧 KQL Query Used
+```kql
+let startTime = todatetime('2025-12-03T07:26:03.9765516Z');
+let endTime = todatetime('2025-12-04T06:27:10.6828355Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceNetworkEvents
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| where RemoteIPType == "Public"
+| project TimeGenerated, InitiatingProcessFileName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl
+| order by TimeGenerated asc
+```
+
+### 🖼️ Screenshot
+<img width="882" height="254" alt="image" src="https://github.com/user-attachments/assets/cbe16653-7881-4ae1-9e30-a1d60894cb39" />
+
+
+### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Monitor for connections to testing and debugging services (httpbin.org, webhook.site, requestbin.com, postb.in) from production systems, especially when initiated by PowerShell or scripting engines. Hunt for network connections occurring within 1-5 minutes after archive file creation to identify exfiltration preparation activity. Query for HTTP POST requests to external endpoints following data staging events. Correlate connections to benign testing services with subsequent connections to unfamiliar or suspicious domains to identify the actual exfiltration destination. Implement network egress controls to block or alert on connections to known testing services from endpoints that should not require external debugging capabilities.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-16">🚩 <strong>Flag 16: Local Log Clearing Attempt Evidence</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify command-line evidence of attempted local log clearing.
 
 ### 📌 Finding
-<High-level description of the activity>
+Execution of wevtutil.exe detected with command-line parameters targeting the PowerShell Operational event log for clearing. The command was initiated by PowerShell under the compromised account, representing an attempt to erase evidence of PowerShell-based malicious activity from Windows event logs.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 8:18:58.783 AM |
+| ProcessCommandLine | "wevtutil.exe" cl Microsoft-Windows-PowerShell/Operational |
+| AccountName | 5y51-d3p7 |
+| InitiatingProcessCommandLine | "powershell.exe" |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1070.001 (Indicator Removal: Clear Windows Event Logs)**. The wevtutil utility with the "cl" (clear log) parameter is the standard Windows method for erasing event logs. Targeting the PowerShell Operational log specifically demonstrates the attacker's awareness that their PowerShell-based activities (script execution, file staging, network connections) would generate telemetry in this log. This log clearing occurred approximately 52 minutes after the outbound transfer test to httpbin.org, suggesting the attacker attempted to cover their tracks after validating exfiltration capabilities. The PowerShell initiation indicates this was part of an automated cleanup script rather than manual command execution. Clearing logs is a strong indicator of malicious intent, as legitimate administrative activities rarely require wholesale log deletion.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01');
+let endTime = todatetime('2025-12-10');
+let firstCompromisedDevice = "sys1-dept";
+DeviceProcessEvents
+| where DeviceName == firstCompromisedDevice
+| where TimeGenerated between (startTime .. endTime)
+| where ProcessCommandLine has_any ("wevtutil", "Clear-EventLog", "clear-log", "cl Security", "cl Application", "cl System")
+| project TimeGenerated, ProcessCommandLine, AccountName, InitiatingProcessCommandLine
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="924" height="145" alt="image" src="https://github.com/user-attachments/assets/ca1fb295-8d4c-4fbf-8289-4d9f2b505a1a" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Monitor for all wevtutil.exe executions with "cl" or "clear-log" parameters, treating these as high-severity indicators of anti-forensic activity. Hunt for Clear-EventLog PowerShell cmdlet usage across the environment. Look for log clearing attempts targeting Security, System, or PowerShell Operational logs as these contain the most valuable forensic evidence. Correlate log clearing with other suspicious activity from the same account within the preceding hours to identify what the attacker is attempting to hide. Implement Sysmon or centralized log forwarding to ensure event data is preserved externally even if local logs are cleared. Alert on any log clearing outside of approved maintenance windows or by non-administrative accounts.
 
 </details>
 
