@@ -702,9 +702,7 @@ Monitor all SensitiveFileRead events across the environment, prioritizing files 
 </details>
 ---
 
----
-
-markdown<details>
+<details>
 <summary id="-flag-14">🚩 <strong>Flag 14: Candidate Archive Creation Location</strong></summary>
 
 ### 🎯 Objective
@@ -844,235 +842,264 @@ Monitor for all wevtutil.exe executions with "cl" or "clear-log" parameters, tre
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-17">🚩 <strong>Flag 17: Second Endpoint Scope Confirmation</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the second endpoint involved in the chain based on similar telemetry patterns.
 
 ### 📌 Finding
-<High-level description of the activity>
+Network telemetry identified a second compromised endpoint named "main1-srvr" exhibiting remote session activity. The server shows an active remote session connection to external IP 150.171.28.11, indicating lateral movement from the initial sys1-dept workstation compromise to critical server infrastructure.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| DeviceName | main1-srvr |
+| Timestamp (UTC) | 12/3/2025, 10:57:09.238 AM |
+| InitiatingProcessAccountName | main1-srvr |
+| IsInitiatingProcessRemoteSession | true |
+| LocalIP | 10.0.0.12 |
+| RemoteIPType | Public |
+| RemoteIP | 150.171.28.11 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1021 (Remote Services)** and **T1570 (Lateral Tool Transfer)**. The compromise of main1-srvr represents a critical escalation from endpoint to server infrastructure. Servers typically have elevated privileges, access to centralized data repositories, and network visibility across the enterprise. The device naming "main1-srvr" suggests this is a primary server, potentially hosting critical business services, databases, or file shares. The external remote session IP (150.171.28.11) differs from the previous external IP (4.150.155.223), indicating the attacker may be using multiple command and control infrastructure points or has established a multi-hop proxy chain. The shared LocalIP (10.0.0.12) with sys1-dept suggests these systems are on the same network segment, facilitating lateral movement.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-04T08:29:21.12468Z');
+DeviceNetworkEvents
+| where TimeGenerated between (startTime .. endTime)
+| where InitiatingProcessRemoteSessionIP == "192.168.0.110"
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, IsInitiatingProcessRemoteSession, LocalIP, RemoteIPType, RemoteIP
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="902" height="224" alt="image" src="https://github.com/user-attachments/assets/146bea65-dbc8-476f-9d18-51f960e833cc" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Pivot on main1-srvr to identify all malicious activity on this second compromised system. Query DeviceProcessEvents, DeviceFileEvents, and DeviceRegistryEvents for main1-srvr using the same hunting techniques applied to sys1-dept. Investigate how lateral movement occurred from sys1-dept to main1-srvr by searching for authentication events, SMB connections, or remote execution attempts between these systems. Hunt for the external IP 150.171.28.11 across all network telemetry to identify other potentially compromised systems communicating with this infrastructure. Assess the criticality of main1-srvr and prioritize containment and forensic analysis given its likely elevated role in the environment.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-18">🚩 <strong>Flag 18: Approved Bonus Artifact Access on Second Endpoint</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Confirm the approved bonus artifact is accessed again on the second endpoint.
 
 ### 📌 Finding
-<High-level description of the activity>
+SensitiveFileRead event detected on main1-srvr for "YearEnd_ReviewPackage_2025.zip" located in the internal archive directory. The file was accessed by a PowerShell process that was created at 3:11:58.602 AM UTC, demonstrating continued targeting of year-end compensation and review materials on the compromised server infrastructure.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | main1-srvr |
+| Timestamp (UTC) | 12/4/2025, 3:15:48.361 AM |
+| ActionType | SensitiveFileRead |
+| FileName | YearEnd_ReviewPackage_2025.zip |
+| FolderPath | C:\Users\Main1-Srvr\Documents\InternalReferences\ArchiveBundles |
+| InitiatingProcessFileName | powershell.exe |
+| InitiatingProcessCreationTime (UTC) | 12/4/2025, 3:11:58.602 AM |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1005 (Data from Local System)** on the second compromised endpoint. The access to year-end review package materials on main1-srvr demonstrates the attacker's systematic targeting of sensitive HR and compensation data across multiple systems. The file location in "InternalReferences\ArchiveBundles" suggests this server hosts centralized archive storage, making it a high-value target containing historical sensitive data beyond what was available on the workstation. The PowerShell process creation timestamp (3:11:58 AM) occurring approximately 4 minutes before the file read indicates the attacker launched a data discovery or collection script that subsequently identified and accessed this sensitive archive. This represents the third distinct year-end/bonus-related artifact accessed across the attack chain, confirming compensation data as the primary intelligence objective.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01');
+let endTime = todatetime('2025-12-10');
+DeviceEvents
+| where DeviceName == "main1-srvr"
+| where TimeGenerated between (startTime .. endTime)
+| where ActionType == "SensitiveFileRead"
+| project TimeGenerated, ActionType, InitiatingProcessCreationTime, FileName, FolderPath, InitiatingProcessFileName, AdditionalFields
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="936" height="191" alt="image" src="https://github.com/user-attachments/assets/2e08662a-39e0-4bfe-9a4e-006706aab023" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Hunt for SensitiveFileRead events across both compromised systems to identify the full scope of sensitive data access. Correlate InitiatingProcessCreationTime with DeviceProcessEvents to identify what spawned the PowerShell process and what command-line parameters were used. Query for files in "Archive" or "Reference" directories as these often contain historical sensitive data that may not be actively monitored. Look for patterns where the same attacker targets similar file types (bonus, review, compensation) across multiple systems, indicating focused intelligence gathering. Investigate whether YearEnd_ReviewPackage_2025.zip was subsequently staged or exfiltrated by querying for file copy, network transfer, or additional archive creation events following this access.
 
 </details>
 
 ---
 
+<details>
+<summary id="-flag-19">🚩 <strong>Flag 19: Employee Scorecard Access on Second Endpoint</strong></summary>
+
+### 🎯 Objective
+Confirm employee-related scorecard access occurs again on the second endpoint and identify the remote session device context.
+
+### 📌 Finding
+Notepad execution detected on main1-srvr opening the file "Scorecard_JavierR.txt" from the DepartmentReviews directory. The access originated from a remote session associated with device "YE-FINANCEREVIE", representing a fourth compromised system in the attack chain and indicating the attacker's continued focus on employee performance and compensation data.
+
+### 🔍 Evidence
+| Field | Value |
+|------|-------|
+| Host | main1-srvr |
+| Timestamp (UTC) | 12/4/2025, 3:14:03.712 AM |
+| ProcessCommandLine | "notepad.exe" C:\Users\Main1-Srvr\Documents\DepartmentReviews\Scorecard_JavierR.txt |
+| AccountName | main1-srvr |
+| InitiatingProcessCommandLine | "powershell.exe" |
+| ProcessRemoteSessionDeviceName | YE-FINANCEREVIE |
+
+### 💡 Why it matters
+This activity represents **MITRE ATT&CK T1021 (Remote Services)** and **T1083 (File and Directory Discovery)** from a fourth compromised endpoint. The device name "YE-FINANCEREVIE" indicates this is a Finance department workstation used for employee reviews, suggesting the attacker has systematically compromised systems across multiple departments (IT Helpdesk, HR Planning, Finance Review). The targeting of the same employee's scorecard (JavierR) that was previously accessed on sys1-dept demonstrates persistent intelligence gathering on specific individuals, potentially indicating this employee holds a sensitive role or has access the attacker wants to compromise. The use of notepad for file viewing initiated by PowerShell suggests automated or scripted browsing behavior. The structured directory path "DepartmentReviews" on the server indicates main1-srvr serves as a centralized repository for cross-departmental personnel data.
+
+### 🔧 KQL Query Used
+```kql
+let startTime = todatetime('2025-11-01');
+let endTime = todatetime('2025-12-10');
+let firstCompromisedDevice = "main1-srvr";
+DeviceProcessEvents
+| where DeviceName == firstCompromisedDevice
+| where TimeGenerated between (startTime .. endTime)
+| where FileName =~ "notepad.exe"
+| where ProcessCommandLine has "scorecard"
+| project TimeGenerated, ProcessCommandLine, AccountName, InitiatingProcessCommandLine, ProcessRemoteSessionDeviceName
+| order by TimeGenerated asc
+```
+
+### 🖼️ Screenshot
+<img width="920" height="167" alt="image" src="https://github.com/user-attachments/assets/ba9320ad-bcca-4cba-bc3b-3bd958a136a5" />
+
+
+### 🛠️ Detection Recommendation
+**Hunting Tip:**
+Pivot on YE-FINANCEREVIE to identify all systems it has accessed and all accounts used from this device. Query authentication logs for lateral movement from YE-FINANCEREVIE to map the full attack path. Hunt for access to employee scorecards, performance reviews, or personnel files from Finance department systems as these should typically be restricted to HR. Correlate the targeting of specific individuals (like JavierR) across multiple systems to identify if the attacker is building dossiers on high-value targets. Investigate whether the Finance Review workstation has elevated access to compensation, budget, or financial planning data that could be the attacker's ultimate objective. Review network segmentation to determine why Finance workstations have access to HR server infrastructure.
+
+</details>
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-20">🚩 <strong>Flag 20: Staging Directory Identification on Second Endpoint</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the directory used for consolidation of internal reference materials and archived content.
 
 ### 📌 Finding
-<High-level description of the activity>
+FileCreated event detected on main1-srvr for "YearEnd_ReviewPackage_2025.zip" in the InternalReferences\ArchiveBundles directory structure. This location represents the attacker's staging area on the compromised server for consolidating sensitive year-end review and compensation materials before exfiltration.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | main1-srvr |
+| Timestamp (UTC) | 12/4/2025, 3:15:29.259 AM |
+| ActionType | FileCreated |
+| FolderPath | C:\Users\Main1-Srvr\Documents\InternalReferences\ArchiveBundles\YearEnd_ReviewPackage_2025.zip |
+| FileName | YearEnd_ReviewPackage_2025.zip |
+| InitiatingProcessAccountName | main1-srvr |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1074.001 (Data Staged: Local Data Staging)** on the compromised server infrastructure. The directory path "InternalReferences\ArchiveBundles" indicates the attacker leveraged existing organizational structure for storing reference materials to blend their staging activity with legitimate file operations. Creating the archive in an established "ArchiveBundles" directory provides operational camouflage, as security monitoring may overlook zip file creation in locations designated for archival purposes. This staging occurred approximately 90 seconds before the same file was accessed via SensitiveFileRead (Flag 18), indicating a create-then-read workflow. The consolidation of year-end review materials into a single archive demonstrates the attacker's preparation for bulk exfiltration of sensitive HR and compensation data collected across multiple compromised systems.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01');
+let endTime = todatetime('2025-12-05');
+DeviceFileEvents
+| where DeviceName == "main1-srvr"
+| where TimeGenerated between (startTime .. endTime)
+| where FileName endswith ".zip"
+| where InitiatingProcessAccountName !in~ ("system", "local service", "network service")
+| where InitiatingProcessAccountName !startswith "NT AUTHORITY"
+| project TimeGenerated, ActionType, FolderPath, FileName, InitiatingProcessAccountName
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="910" height="198" alt="image" src="https://github.com/user-attachments/assets/1a36156d-bcc9-4a02-9f1e-bd52abf76d94" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Monitor for zip file creation in directories with names suggesting legitimate archival purposes (Archive, Backup, Reference, Historical) as attackers exploit these locations for staging. Hunt for file creation followed by SensitiveFileRead events within short time windows to identify create-then-access patterns indicative of staging operations. Query for archives created in user profile Documents folders on servers, as servers typically don't require user-level document archiving. Correlate staging directory locations with subsequent network connections to identify exfiltration attempts. Implement file integrity monitoring on sensitive data repositories to detect unexpected archive creation activity.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-21">🚩 <strong>Flag 21: Staging Activity Timing on Second Endpoint</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Determine when staging activity occurred during the final phase on the second endpoint.
 
 ### 📌 Finding
-<High-level description of the activity>
+File staging activity on main1-srvr occurred at 3:15:29.259 AM UTC on December 4th, 2025. This timestamp marks the creation of the YearEnd_ReviewPackage_2025.zip archive in the InternalReferences\ArchiveBundles directory, representing the final data consolidation phase before exfiltration.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | main1-srvr |
+| Timestamp (UTC) | 12/4/2025, 3:15:29.259 AM |
+| ActionType | FileCreated |
+| FileName | YearEnd_ReviewPackage_2025.zip |
+| FolderPath | C:\Users\Main1-Srvr\Documents\InternalReferences\ArchiveBundles |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
+This timestamp represents a critical inflection point in the attack timeline, marking the transition from data collection to preparation for exfiltration on the server infrastructure. The timing at 3:15:29 AM occurred approximately 3 minutes after the PowerShell process was created (3:11:58 AM from Flag 18) and 90 seconds before the sensitive file read event (3:15:48 AM), revealing a compressed operational tempo during the final phase. The early morning timing (3:15 AM local time) demonstrates the attacker's operational security awareness, choosing hours with minimal security analyst coverage and reduced likelihood of real-time detection. This staging event on main1-srvr occurred approximately 20 hours after the initial staging activity on sys1-dept (7:26 AM on December 3rd), indicating the attacker conducted phased collection operations across multiple days to avoid triggering volume-based detection thresholds.
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Analyze the timing patterns of staging events across both compromised systems to understand the attacker's operational rhythm and identify potential time-based detection opportunities. Hunt for archive creation during off-hours (late night/early morning) as indicators of malicious activity rather than legitimate business operations. Correlate this timestamp with network telemetry to determine if exfiltration occurred immediately after staging or if the attacker waited for additional operational windows. Query for other suspicious activities occurring within the same time window (3:00-4:00 AM) to identify potentially related attack actions. Use this timing information to prioritize threat hunting during historical gaps in security monitoring coverage.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-22">🚩 <strong>Flag 22: Outbound Connection Remote IP (Final Phase)</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify the remote IP associated with the final outbound connection attempt.
 
 ### 📌 Finding
-<High-level description of the activity>
+PowerShell-initiated network connection detected from main1-srvr to httpbin.org (54.83.21.156) on port 443 occurring 19 seconds after the YearEnd_ReviewPackage_2025.zip staging activity. This connection represents the final outbound transfer attempt, confirming the attacker validated exfiltration capabilities from the compromised server.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | main1-srvr |
+| Timestamp (UTC) | 12/4/2025, 3:15:48.347 AM |
+| InitiatingProcessFileName | powershell.exe |
+| RemoteIP | 54.83.21.156 |
+| RemoteUrl | httpbin.org |
+| RemotePort | 443 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1048 (Exfiltration Over Alternative Protocol)** and mirrors the same connectivity testing pattern observed on sys1-dept (Flag 7 and 15). The use of httpbin.org for the second time confirms this is the attacker's standard operational procedure for validating HTTP/HTTPS exfiltration capabilities before transmitting actual data. The connection to port 443 (HTTPS) indicates the attacker is preparing encrypted exfiltration to evade network inspection. The timing 19 seconds after staging demonstrates the same rapid operational tempo seen previously: stage data, immediately test connectivity, then exfiltrate. The different IP address (54.83.21.156 vs 23.215.0.136 from Flag 7) suggests httpbin.org uses multiple backend servers or the attacker is routing through different infrastructure. This represents the final observable phase before data leaves the environment.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-04T03:15:29Z');
+let endTime = todatetime('2025-12-05');
+DeviceNetworkEvents
+| where DeviceName == "main1-srvr"
+| where TimeGenerated >= startTime
+| where RemoteIPType == "Public"
+| where InitiatingProcessAccountName !in~ ("system", "local service", "network service")
+| where InitiatingProcessAccountName !startswith "NT AUTHORITY"
+| project TimeGenerated, InitiatingProcessFileName, RemoteIP, RemoteUrl, RemotePort
+| order by TimeGenerated asc
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="919" height="169" alt="image" src="https://github.com/user-attachments/assets/0b12d531-9df1-4e9a-815a-c1f78ac9779e" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Investigate the remote IP 54.83.21.156 across all network telemetry to identify if other systems successfully exfiltrated data to this endpoint. Hunt for connections to httpbin.org followed by connections to other external IPs within minutes, as the testing service connection may precede actual exfiltration to attacker-controlled infrastructure. Query for HTTPS (port 443) connections from servers to external IPs, as server-to-internet traffic is often anomalous and may indicate data theft. Correlate this connection with subsequent file deletion, log clearing, or other anti-forensic activities to complete the attack timeline. Implement network monitoring for data volume transferred to identify if actual exfiltration occurred or if this was only a connectivity test that was interrupted by detection or remediation.
 
 </details>
 
