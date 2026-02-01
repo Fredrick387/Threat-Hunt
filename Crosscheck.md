@@ -441,7 +441,6 @@ DeviceFileEvents
 Query DeviceFileEvents for access to files containing sensitive keywords (bonus, salary, compensation, payroll, executive) by the compromised account. Look for FileCreated actions involving .lnk files as indicators of interactive file browsing. Pivot to identify the full path of the original BonusMatrix_Draft_v3.xlsx file and check for subsequent FileRead, FileModified, or FileCopied events. Hunt for file staging activity where sensitive documents are copied to temporary directories or compressed into archives. Review network telemetry for potential exfiltration of this file to external IPs or cloud storage services.
 
 </details>
----
 
 ---
 
@@ -491,6 +490,7 @@ DeviceFileEvents
 Hunt for archive file creation (.zip, .rar, .7z, .tar.gz) in non-standard locations or with suspicious naming patterns (export, stage, data, backup, temp). Correlate the InitiatingProcessUniqueId 2533274790396713 with DeviceProcessEvents to identify all actions taken by this specific PowerShell instance. Query DeviceFileEvents for files added to the archive immediately before creation to identify what sensitive data was packaged. Monitor for subsequent file transfer activity involving export_stage.zip via network connections, cloud uploads, or removable media. Use FileProfile enrichment to determine if the archive still exists and retrieve it for forensic analysis.
 
 </details>
+
 ---
 
 <details>
@@ -766,9 +766,9 @@ DeviceProcessEvents
 Monitor for notepad.exe, wordpad.exe, or other text/document viewers opening files from sensitive directories (HR, Finance, Executive, Legal). Hunt for process command lines containing paths to performance review, compensation, or personnel directories. Correlate notepad.exe executions initiated by scripting engines (PowerShell, cmd.exe) as indicators of automated reconnaissance. Query DeviceFileEvents for all files within the HR\PerformanceReviews directory to identify the full scope of accessible employee data. Look for patterns where files are opened via notepad shortly after being discovered through file browsing or search operations.
 
 </details>
----
 
 ---
+
 
 <details>
 <summary id="-flag-13">🚩 <strong>Flag 13: Approved/Final Bonus Artifact Access</strong></summary>
@@ -812,6 +812,7 @@ DeviceEvents
 Monitor all SensitiveFileRead events across the environment, prioritizing files with "approved", "final", or "confidential" in their names. Hunt for PowerShell or scripting engines accessing files with Microsoft Information Protection labels. Correlate SensitiveFileRead events with subsequent network connections or archive file creation to identify potential exfiltration. Query for accounts accessing multiple sensitive files within short time windows to detect bulk data collection. Implement alerts for SensitiveFileRead actions occurring outside business hours or from service accounts. Review data loss prevention (DLP) policies to ensure sensitive files trigger appropriate controls when accessed, copied, or transferred.
 
 </details>
+
 ---
 
 <details>
@@ -857,6 +858,7 @@ DeviceFileEvents
 Monitor for zip file creation in user profile directories, especially Documents, Desktop, and Downloads folders. Hunt for archive files with business-related naming patterns (candidate, hiring, Q1-Q4, finance, payroll) as these indicate targeted data collection rather than benign user activity. Query for multiple archive files created within close proximity to identify systematic data staging operations. Correlate archive creation with SensitiveFileRead events to determine what sensitive data was packaged. Look for archives created in locations that differ from typical malware staging paths to detect evasion techniques.
 
 </details>
+
 ---
 
 
@@ -1214,90 +1216,6 @@ DeviceNetworkEvents
 Investigate the remote IP 54.83.21.156 across all network telemetry to identify if other systems successfully exfiltrated data to this endpoint. Hunt for connections to httpbin.org followed by connections to other external IPs within minutes, as the testing service connection may precede actual exfiltration to attacker-controlled infrastructure. Query for HTTPS (port 443) connections from servers to external IPs, as server-to-internet traffic is often anomalous and may indicate data theft. Correlate this connection with subsequent file deletion, log clearing, or other anti-forensic activities to complete the attack timeline. Implement network monitoring for data volume transferred to identify if actual exfiltration occurred or if this was only a connectivity test that was interrupted by detection or remediation.
 
 </details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
----
-
-<details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
-
-### 🎯 Objective
-<What the attacker was trying to accomplish>
-
-### 📌 Finding
-<High-level description of the activity>
-
-### 🔍 Evidence
-
-| Field | Value |
-|------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
-
-### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
-
-### 🖼️ Screenshot
-<Insert screenshot>
-
-### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
-
-</details>
-
----
-
-<!-- Duplicate Flag 1 section for Flags 2–20 -->
-
----
 
 ---
 
