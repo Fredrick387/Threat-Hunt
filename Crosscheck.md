@@ -147,13 +147,13 @@ Pivot on the compromised account (5y51-d3p7) across all logs to identify the ful
 ---
 
 <details>
-<summary id="-flag-2">🚩 <strong>Flag 2: Outbound Connection to External IP</strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag 2: Remote Session Source Attribution</strong></summary>
 
 ### 🎯 Objective
-Establish command and control communication channel from compromised endpoint.
+Identify the remote session source information tied to the initiating access on the first endpoint.
 
 ### 📌 Finding
-Network connection initiated from sys1-dept to external public IP address 4.150.155.223. The connection originated from a remote session context under the compromised account 5y51-d3p7, occurring approximately 21 hours after initial access.
+Remote session activity detected on sys1-dept originating from external IP address 192.168.0.110. The session was established under the compromised account 5y51-d3p7, with the `IsInitiatingProcessRemoteSession` flag confirming remote execution context. This metadata reveals the attacker's source infrastructure used to access the compromised endpoint.
 
 ### 🔍 Evidence
 | Field | Value |
@@ -164,10 +164,10 @@ Network connection initiated from sys1-dept to external public IP address 4.150.
 | IsInitiatingProcessRemoteSession | true |
 | LocalIP | 10.0.0.12 |
 | RemoteIPType | Public |
-| RemoteIP | 4.150.155.223 |
+| RemoteIP | 192.168.0.110 |
 
 ### 💡 Why it matters
-This activity represents **MITRE ATT&CK T1071 (Application Layer Protocol)** and **T1041 (Exfiltration Over C2 Channel)**. The connection to a public IP from an internal RFC 1918 address (10.0.0.12) indicates potential command and control or data exfiltration activity. The `IsInitiatingProcessRemoteSession: true` flag confirms the attacker was actively operating on the host via remote access at the time of connection. This represents progression from initial access to establishing persistence and communication infrastructure. The 21-hour gap between initial access and this connection suggests reconnaissance or lateral movement activity occurred between these events.
+This finding maps to **MITRE ATT&CK T1021 (Remote Services)** and provides critical attribution intelligence. The remote IP 4.150.155.223 represents the attacker's infrastructure or compromised staging system used to access the environment. Remote session metadata is essential for identifying the attack origin, blocking active threat actor infrastructure, and correlating activity across multiple incidents. The public IP classification confirms external access rather than lateral movement from another internal system. This data point enables defenders to pivot across all telemetry sources to identify the full scope of connections from this malicious source.
 
 ### 🔧 KQL Query Used
 ```kql
@@ -183,12 +183,11 @@ DeviceNetworkEvents
 ```
 
 ### 🖼️ Screenshot
-<img width="920" height="221" alt="image" src="https://github.com/user-attachments/assets/7fd101e8-1ff3-4795-8b0e-db25e68291f9" />
-
+<img src="uploads/1769913464418_image.png">
 
 ### 🛠️ Detection Recommendation
 **Hunting Tip:**  
-Investigate the destination IP 4.150.155.223 across all endpoints and network telemetry. Query threat intelligence feeds for known malicious infrastructure associations. Pivot on connections where `IsInitiatingProcessRemoteSession == true` combined with external public IPs to identify similar attacker-controlled sessions. Examine DeviceProcessEvents during this timeframe to identify what process initiated the connection. Review firewall logs for data volume transferred to assess potential exfiltration. Look for DNS queries preceding this connection to determine if domain resolution occurred.
+Pivot on the source IP 4.150.155.223 across all network telemetry to identify additional compromised accounts or systems. Query IdentityLogonEvents and DeviceLogonEvents for authentication attempts from this IP. Hunt for remote session indicators (`IsInitiatingProcessRemoteSession == true`) combined with external IPs to detect similar attack patterns. Correlate with threat intelligence feeds to determine if this IP is known malicious infrastructure. Check firewall logs for persistence of connections from this source and identify any other internal systems contacted.
 
 </details>
 
@@ -196,37 +195,45 @@ Investigate the destination IP 4.150.155.223 across all endpoints and network te
 
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-3">🚩 <strong>Flag 3: Support Script Execution Confirmation</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Confirm execution of a support-themed PowerShell script from a user-accessible directory.
 
 ### 📌 Finding
-<High-level description of the activity>
+PowerShell execution detected on sys1-dept with an execution policy bypass executing a script named "PayrollSupportTool.ps1" from the user's Downloads directory. The command line indicates deliberate evasion of PowerShell security controls to execute the malicious payload.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:07:15.565 AM |
+| AccountName | 5y51-d3p7 |
+| ProcessCommandLine | "powershell.exe" -ExecutionPolicy Bypass -File C:\users\5y51-D3p7\Downloads\PayrollSupportTool.ps1 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1059.001 (Command and Scripting Interpreter: PowerShell)** and **T1204.002 (User Execution: Malicious File)**. The use of `-ExecutionPolicy Bypass` is a classic defense evasion technique that circumvents PowerShell's built-in script execution restrictions. The script name "PayrollSupportTool.ps1" follows social engineering naming conventions designed to appear legitimate. Execution from the Downloads folder indicates the script was likely delivered via phishing, malicious download, or copied during the remote session. This marks a critical escalation point where the attacker transitions from remote access to executing custom tooling on the compromised system.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T06:27:31.1857946Z');
+let endTime = todatetime('2025-12-03T08:29:21.12468Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceProcessEvents
+| where DeviceName == firstCompromisedDevice
+| where AccountName == badUser
+| where TimeGenerated between (startTime .. endTime)
+| where ProcessCommandLine has "powershell"
+| project TimeGenerated, DeviceName, ProcessCommandLine
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img src="uploads/1769915136997_image.png">
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Hunt for PowerShell executions with `-ExecutionPolicy Bypass`, `-ep bypass`, or `-exec bypass` flags across the environment. Query DeviceFileEvents to identify when PayrollSupportTool.ps1 was created or modified to determine delivery method. Extract and analyze the script contents from endpoint or backup sources. Pivot on Downloads directory executions combined with script file extensions (.ps1, .bat, .vbs, .js) to identify similar malicious script activity. Look for child processes spawned by this PowerShell execution to map post-exploitation activity.
 
 </details>
 
