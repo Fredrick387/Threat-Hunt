@@ -12,31 +12,47 @@
 
 
 
-# 🛡️ Threat Hunt Report – <Hunt Name>
+# 🛡️ Threat Hunt Report – Year-End Bonus Data Theft Campaign
 
 ---
 
 ## 📌 Executive Summary
 
-<Brief, high-level overview of the threat hunt.  
-Answer what happened, why it matters, and what was discovered in 3–4 sentences.>
+This threat hunt uncovered a sophisticated multi-stage data theft operation targeting sensitive HR compensation and employee review data across multiple systems within the environment. What began as compromised credentials on workstation **sys1-dept** evolved into a coordinated campaign spanning five compromised endpoints, systematic targeting of year-end bonus matrices, employee scorecards, and candidate packages, culminating in staged data prepared for exfiltration.
+
+The adversary demonstrated advanced operational security through methodical reconnaissance, dual persistence mechanisms, anti-forensic log clearing, and phased data collection across departmental boundaries. The attacker's focus on approved compensation data, combined with lateral movement to HR and Finance systems, indicates corporate espionage, insider threat activity, or ransomware operators seeking maximum leverage for extortion.
+
+This investigation highlights how attackers can successfully exploit valid credentials to blend into legitimate business operations, systematically pillage sensitive data repositories, and prepare for bulk exfiltration while evading real-time detection through off-hours operations and social engineering file naming conventions.
 
 ---
 
 ## 🎯 Hunt Objectives
 
-- Identify malicious activity across endpoints and network telemetry  
-- Correlate attacker behavior to MITRE ATT&CK techniques  
-- Document evidence, detection gaps, and response opportunities  
+- Identify malicious activity across compromised endpoints and network telemetry
+- Map attacker progression from initial access through data staging
+- Correlate adversary behavior to MITRE ATT&CK techniques
+- Document evidence, detection gaps, and remediation priorities
+- Reconstruct the full attack timeline across multiple compromised systems
 
 ---
 
 ## 🧭 Scope & Environment
 
-- **Environment:** <Placeholder>  
-- **Data Sources:** <Placeholder>  
-- **Timeframe:** <YYYY-MM-DD → YYYY-MM-DD>
-- **Link:** https://docs.google.com/forms/d/e/1FAIpQLSeUTjLMNcPwpjvgDnGC-MJOE7EaBm4ObwNeyhlfl66Di8o6cQ/viewform?usp=header
+- **Environment:** Corporate Windows endpoint environment with HR, IT, and Finance departmental systems
+- **Data Sources:** Microsoft Defender for Endpoint Advanced Hunting
+  - DeviceProcessEvents
+  - DeviceNetworkEvents
+  - DeviceFileEvents
+  - DeviceRegistryEvents
+  - DeviceEvents (SensitiveFileRead telemetry)
+  - IdentityLogonEvents
+- **Timeframe:** 2025-12-01 03:13:33 UTC → 2025-12-04 08:29:21 UTC
+- **Compromised Systems Identified:**
+  - sys1-dept (Initial Access - Departmental Workstation)
+  - YE-HELPDESKTECH (IT Helpdesk System)
+  - YE-HRPLANNER (HR Planning Workstation)
+  - YE-FINANCEREVIE (Finance Review Workstation)
+  - main1-srvr (Primary Server - Centralized Data Repository)
 
 ---
 
@@ -44,27 +60,16 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 - [🧠 Hunt Overview](#-hunt-overview)
 - [🧬 MITRE ATT&CK Summary](#-mitre-attck-summary)
+- [🔥 Executive MITRE ATT&CK Heatmap](#-executive-mitre-attck-heatmap)
+- [📊 Executive Takeaway](#-executive-takeaway)
+- [⏱️ Attack Timeline](#️-attack-timeline)
 - [🔍 Flag Analysis](#-flag-analysis)
-  - [🚩 Flag 1](#-flag-1)
-  - [🚩 Flag 2](#-flag-2)
-  - [🚩 Flag 3](#-flag-3)
-  - [🚩 Flag 4](#-flag-4)
-  - [🚩 Flag 5](#-flag-5)
-  - [🚩 Flag 6](#-flag-6)
-  - [🚩 Flag 7](#-flag-7)
-  - [🚩 Flag 8](#-flag-8)
-  - [🚩 Flag 9](#-flag-9)
-  - [🚩 Flag 10](#-flag-10)
-  - [🚩 Flag 11](#-flag-11)
-  - [🚩 Flag 12](#-flag-12)
-  - [🚩 Flag 13](#-flag-13)
-  - [🚩 Flag 14](#-flag-14)
-  - [🚩 Flag 15](#-flag-15)
-  - [🚩 Flag 16](#-flag-16)
-  - [🚩 Flag 17](#-flag-17)
-  - [🚩 Flag 18](#-flag-18)
-  - [🚩 Flag 19](#-flag-19)
-  - [🚩 Flag 20](#-flag-20)
+  - [Phase 1: Initial Access & Reconnaissance (Flags 1-4)](#phase-1-initial-access--reconnaissance-flags-1-4)
+  - [Phase 2: Data Discovery & Staging (Flags 5-7)](#phase-2-data-discovery--staging-flags-5-7)
+  - [Phase 3: Persistence Establishment (Flags 8-9)](#phase-3-persistence-establishment-flags-8-9)
+  - [Phase 4: Lateral Movement & Expanded Collection (Flags 10-13)](#phase-4-lateral-movement--expanded-collection-flags-10-13)
+  - [Phase 5: Secondary Staging & Exfiltration Prep (Flags 14-16)](#phase-5-secondary-staging--exfiltration-prep-flags-14-16)
+  - [Phase 6: Server Compromise & Final Collection (Flags 17-22)](#phase-6-server-compromise--final-collection-flags-17-22)
 - [🚨 Detection Gaps & Recommendations](#-detection-gaps--recommendations)
 - [🧾 Final Assessment](#-final-assessment)
 - [📎 Analyst Notes](#-analyst-notes)
@@ -73,36 +78,143 @@ Answer what happened, why it matters, and what was discovered in 3–4 sentences
 
 ## 🧠 Hunt Overview
 
-<High-level narrative describing the attack lifecycle, key behaviors observed, and why this hunt matters.>
+This threat hunt reconstructed a full-spectrum data theft operation beginning with valid account compromise on **sys1-dept** and expanding through coordinated lateral movement to IT, HR, and Finance departmental systems, culminating in centralized collection on **main1-srvr**. The adversary demonstrated sophisticated tradecraft including:
+
+**Operational Characteristics:**
+- **Hands-on-keyboard activity:** Manual file browsing via notepad.exe, Explorer.exe
+- **Phased collection:** 3+ day operation with distinct collection waves
+- **Social engineering:** File and task names mimicking legitimate HR/payroll operations
+- **Operational security:** Off-hours activity (3-7 AM local time), log clearing, connectivity pre-flight testing
+- **Systematic targeting:** Repeated access to the same employee files (JavierR) across systems
+
+**Attack Progression:**
+1. Initial remote access using compromised credentials (account: 5y51-d3p7)
+2. Execution of social-engineered PowerShell payload (PayrollSupportTool.ps1)
+3. System and file reconnaissance to map sensitive data locations
+4. Discovery and staging of bonus matrices, employee reviews, candidate packages
+5. Dual persistence via registry Run keys and scheduled tasks
+6. Lateral movement to 4 additional systems via internal pivot point (192.168.0.110)
+7. Expanded collection from HR Planning, IT Helpdesk, Finance Review workstations
+8. Server compromise (main1-srvr) for access to centralized archive repositories
+9. Final staging of year-end review packages
+10. Connectivity testing via httpbin.org before planned exfiltration
+11. Anti-forensic activity (PowerShell operational log clearing)
+
+This hunt matters because it demonstrates how determined attackers with valid credentials can systematically identify, access, and prepare high-value HR data for theft while evading perimeter defenses and blending into normal business operations. The focus on approved compensation data and systematic cross-departmental collection indicates sophisticated threat actors with specific intelligence objectives rather than opportunistic malware.
 
 ---
 
 ## 🧬 MITRE ATT&CK Summary
 
-| Flag | Technique Category | MITRE ID | Priority |
-|-----:|-------------------|----------|----------|
-| 1 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 2 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 3 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 4 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 5 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 6 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 7 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 8 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 9 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 10 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 11 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 12 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 13 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 14 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 15 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 16 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 17 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 18 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 19 | <Placeholder> | <Placeholder> | <Placeholder> |
-| 20 | <Placeholder> | <Placeholder> | <Placeholder> |
+| Flag | Technique Category | MITRE ID | Priority | System |
+|-----:|-------------------|----------|----------|---------|
+| 1 | Initial Access – Valid Accounts | T1078 | Critical | sys1-dept |
+| 2 | Remote Services – Remote Desktop | T1021 | High | sys1-dept |
+| 3 | Execution – Command & Scripting Interpreter (PowerShell) | T1059.001 | High | sys1-dept |
+| 4 | Discovery – System Owner/User Discovery | T1033 | Medium | sys1-dept |
+| 5 | Discovery – File and Directory Discovery | T1083 | High | sys1-dept |
+| 6 | Collection – Archive Collected Data | T1560.001 | High | sys1-dept |
+| 7 | Command and Control – Application Layer Protocol | T1071 | High | sys1-dept |
+| 8 | Persistence – Registry Run Keys | T1547.001 | High | sys1-dept |
+| 9 | Persistence – Scheduled Task | T1053.005 | High | sys1-dept |
+| 10 | Lateral Movement – Remote Services | T1021 | Critical | sys1-dept |
+| 11 | Lateral Movement – Internal Pivot | T1570 | Critical | sys1-dept |
+| 12 | Discovery – User-Level File Access | T1083 | Medium | sys1-dept |
+| 13 | Collection – Data from Local System (Sensitive) | T1005 | Critical | sys1-dept |
+| 14 | Collection – Data Staging | T1074.001 | High | sys1-dept |
+| 15 | Command and Control – Exfiltration Testing | T1048 | High | sys1-dept |
+| 16 | Defense Evasion – Indicator Removal (Clear Logs) | T1070.001 | Critical | sys1-dept |
+| 17 | Lateral Movement – Secondary System Compromise | T1021 | Critical | main1-srvr |
+| 18 | Collection – Sensitive Archive Access | T1005 | Critical | main1-srvr |
+| 19 | Lateral Movement – Finance System Access | T1021 | Critical | main1-srvr |
+| 20 | Collection – Centralized Archive Staging | T1074.001 | Critical | main1-srvr |
+| 21 | Collection – Final Phase Staging Timing | T1074 | High | main1-srvr |
+| 22 | Command and Control – Final Exfiltration Test | T1048 | Critical | main1-srvr |
 
 ---
+
+## 🔥 Executive MITRE ATT&CK Heatmap
+
+| ATT&CK Phase | Techniques Observed | Severity | Analyst Notes |
+|--------------|-------------------|----------|---------------|
+| Initial Access | Valid Accounts (T1078), Remote Services | 🔴 Critical | Compromised credentials from external IP 4.150.155.223 |
+| Execution | PowerShell Execution (T1059.001), Social Engineering | 🔴 Critical | PayrollSupportTool.ps1 with execution policy bypass |
+| Persistence | Registry Run Keys (T1547.001), Scheduled Tasks (T1053.005) | 🔴 Critical | Dual persistence mechanisms established |
+| Privilege Escalation | Valid Accounts | 🟠 High | Account 5y51-d3p7 likely has elevated privileges |
+| Defense Evasion | Log Clearing (T1070.001), Social Engineering Names | 🔴 Critical | PowerShell operational logs deliberately cleared |
+| Credential Access | Registry Inspection, Token Discovery | 🟠 Medium | Preparation for credential reuse evident |
+| Discovery | File Discovery (T1083), User Discovery (T1033) | 🟠 High | Systematic enumeration of HR directories |
+| Lateral Movement | Remote Services (T1021), Internal Pivoting (T1570) | 🔴 Critical | 5 systems compromised across 3 departments |
+| Collection | Data Staging (T1074), Sensitive File Access (T1005) | 🔴 Critical | Targeted collection of bonus/compensation data |
+| Command & Control | Application Layer Protocol (T1071), Testing Services | 🔴 High | httpbin.org used for exfiltration pre-flight |
+| Exfiltration | Data Transfer (Preparation Phase) | 🟠 High | Staged but not confirmed exfiltrated |
+
+---
+
+## 📊 Executive Takeaway
+
+This intrusion represents a **sophisticated, multi-phase data theft operation** targeting the organization's most sensitive HR and compensation data.
+
+**Key Findings:**
+- **Scope:** 5 compromised systems across IT, HR, and Finance departments
+- **Duration:** 3+ day operation with phased collection activity
+- **Target:** Year-end bonus matrices, employee performance reviews, candidate packages
+- **Method:** Valid account compromise, social engineering, systematic lateral movement
+- **Status:** Data staged and prepared for exfiltration; actual data loss not confirmed but highly likely
+
+**Critical Indicators:**
+1. **Systematic targeting of specific data types** across multiple systems indicates intelligence-driven operation
+2. **Dual persistence mechanisms** demonstrate intent for long-term access
+3. **Anti-forensic activity** (log clearing) shows sophistication and operational security awareness
+4. **Off-hours operations** (3-7 AM) designed to evade real-time detection
+5. **Social engineering naming** (PayrollSupportTool, BonusReviewAssist) successfully evaded initial scrutiny
+
+**Business Impact:**
+- **Confidential compensation data** compromised, including executive-level bonus allocations
+- **Employee performance reviews** accessed, creating privacy and legal exposure
+- **Candidate hiring packages** stolen, impacting competitive recruitment intelligence
+- **Multiple department credentials** likely compromised, enabling future lateral movement
+- **Regulatory exposure** under data protection laws (GDPR, CCPA) for employee PII theft
+
+**Immediate Actions Required:**
+1. Reset credentials for account 5y51-d3p7 and all accounts that authenticated from 192.168.0.110
+2. Isolate and forensically image all 5 compromised systems
+3. Review all scheduled tasks and registry Run keys across the environment
+4. Implement emergency monitoring for httpbin.org and similar testing services
+5. Notify legal/compliance teams of potential data breach
+6. Conduct damage assessment to determine if exfiltration occurred
+
+Early detection through correlation of remote session telemetry, sensitive file access patterns, and off-hours PowerShell activity is critical to disrupting similar intrusions before they achieve their objectives.
+
+---
+
+## ⏱️ Attack Timeline
+
+### December 1, 2025
+**03:13:33 UTC** - Initial access established on sys1-dept via compromised account 5y51-d3p7
+
+### December 3, 2025
+**01:24:53 UTC** - First outbound connection to external IP 4.150.155.223 from remote session  
+**06:07:15 UTC** - PayrollSupportTool.ps1 executed with execution policy bypass  
+**06:12:03 UTC** - Reconnaissance: `whoami /all` executed  
+**06:27:10 UTC** - First data staging: export_stage.zip created  
+**06:27:31 UTC** - Connectivity test: Connection to example.com  
+**06:27:59 UTC** - Persistence: Registry Run key established  
+**06:46:30 UTC** - Lateral movement: YE-HELPDESKTECH accesses Review_JavierR.lnk  
+**06:47:40 UTC** - Persistence: Scheduled task "BonusReviewAssist" created  
+**07:24:42 UTC** - Discovery: BonusMatrix_Draft_v3.xlsx.lnk accessed  
+**07:25:15 UTC** - File access: Review_JavierR.lnk opened via notepad  
+**07:25:39 UTC** - **Critical:** BonusMatrix_Q4_Approved.xlsx sensitive file read  
+**07:26:03 UTC** - Lateral movement: YE-HRPLANNER accesses Q4Candidate_Pack.zip  
+**07:26:28 UTC** - Connectivity test: Connection to httpbin.org (18.214.194.42)  
+**08:18:58 UTC** - Anti-forensics: PowerShell operational logs cleared via wevtutil
+
+### December 4, 2025
+**03:11:58 UTC** - Server compromise: PowerShell process created on main1-srvr  
+**03:14:03 UTC** - Lateral movement: YE-FINANCEREVIE accesses Scorecard_JavierR.txt  
+**03:15:29 UTC** - Final staging: YearEnd_ReviewPackage_2025.zip created on main1-srvr  
+**03:15:48 UTC** - Final connectivity test: httpbin.org (54.83.21.156) from main1-srvr  
+**10:57:09 UTC** - Remote session from external IP 150.171.28.11 detected on main1-srvr
 
 ## 🔍 Flag Analysis
 
