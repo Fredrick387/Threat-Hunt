@@ -111,82 +111,89 @@ _All flags below are collapsible for readability._
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-1">🚩 <strong>Flag 1: Initial Access via Compromised Service Account</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Establish initial foothold on target endpoint using compromised credentials.
 
 ### 📌 Finding
-<High-level description of the activity>
+ProcessCreated event observed on sys1-dept endpoint initiated by account 5y51-d3p7. The activity represents the first recorded action in the attack chain, indicating successful credential compromise and initial access to the environment.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/1/2025, 3:13:33.708 AM |
+| ActionType | ProcessCreated |
+| DeviceId | 1d0e12b505d61c7eb1f1fd7842d905c99f6ae26a |
+| Initiating Account | sys1-dept\5y51-d3p7 |
+| AccountSid | S-1-5-21-805396643-3920266184-3816603331-500 |
+| TenantId | 60c7f53e-249a-4077-b68e-55a4ae877d7c |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
+This event marks the initial access phase of the intrusion, aligning with **MITRE ATT&CK T1078 (Valid Accounts)**. The use of account 5y51-d3p7 suggests credential theft or compromise occurred prior to this activity. The timing (early morning hours) and the fact this is the earliest observed event in the timeline indicates this is the attacker's entry point. The AccountSid ending in -500 indicates a built-in Administrator account, representing high-privilege access from the start of the compromise.
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="883" height="225" alt="image" src="https://github.com/user-attachments/assets/78aeda9a-e124-4750-9002-05abdbd14c65" />
+
 
 ### 🛠️ Detection Recommendation
-
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Pivot on the compromised account (5y51-d3p7) across all logs to identify the full scope of unauthorized activity. Query authentication logs (IdentityLogonEvents) to determine where and when this account authenticated prior to this event. Look for anomalous logon patterns such as impossible travel, unusual source IPs, or logons outside normal business hours. Correlate process creation events with this account to map the attack chain progression.
 
 </details>
 
----
 
 ---
 
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-2">🚩 <strong>Flag 2: Outbound Connection to External IP</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Establish command and control communication channel from compromised endpoint.
 
 ### 📌 Finding
-<High-level description of the activity>
+Network connection initiated from sys1-dept to external public IP address 4.150.155.223. The connection originated from a remote session context under the compromised account 5y51-d3p7, occurring approximately 21 hours after initial access.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 1:24:53.664 AM |
+| InitiatingProcessAccountName | 5y51-d3p7 |
+| IsInitiatingProcessRemoteSession | true |
+| LocalIP | 10.0.0.12 |
+| RemoteIPType | Public |
+| RemoteIP | 4.150.155.223 |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1071 (Application Layer Protocol)** and **T1041 (Exfiltration Over C2 Channel)**. The connection to a public IP from an internal RFC 1918 address (10.0.0.12) indicates potential command and control or data exfiltration activity. The `IsInitiatingProcessRemoteSession: true` flag confirms the attacker was actively operating on the host via remote access at the time of connection. This represents progression from initial access to establishing persistence and communication infrastructure. The 21-hour gap between initial access and this connection suggests reconnaissance or lateral movement activity occurred between these events.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-12-01T03:13:33.7087736Z');
+let endTime = todatetime('2025-12-03T08:29:21.12468Z');
+let badUser = "5y51-d3p7";
+let firstCompromisedDevice = "sys1-dept";
+DeviceNetworkEvents
+| where DeviceName == firstCompromisedDevice
+| where InitiatingProcessAccountName == badUser
+| where TimeGenerated >= startTime + 24h
+| project TimeGenerated, DeviceName, InitiatingProcessAccountName, IsInitiatingProcessRemoteSession, LocalIP, RemoteIPType, RemoteIP
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="920" height="221" alt="image" src="https://github.com/user-attachments/assets/7fd101e8-1ff3-4795-8b0e-db25e68291f9" />
+
 
 ### 🛠️ Detection Recommendation
-
 **Hunting Tip:**  
-<Actionable guidance for defenders>
+Investigate the destination IP 4.150.155.223 across all endpoints and network telemetry. Query threat intelligence feeds for known malicious infrastructure associations. Pivot on connections where `IsInitiatingProcessRemoteSession == true` combined with external public IPs to identify similar attacker-controlled sessions. Examine DeviceProcessEvents during this timeframe to identify what process initiated the connection. Review firewall logs for data volume transferred to assess potential exfiltration. Look for DNS queries preceding this connection to determine if domain resolution occurred.
 
 </details>
 
 ---
 
----
 
 <details>
 <summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
