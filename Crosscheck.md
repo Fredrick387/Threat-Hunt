@@ -529,79 +529,82 @@ Monitor for schtasks.exe executions with `/Create` parameter, especially when in
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-10">🚩 <strong>Flag 10: Secondary Access to Employee Scorecard Artifact</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify evidence that a different remote session context accessed an employee-related scorecard file.
 
 ### 📌 Finding
-<High-level description of the activity>
+File access detected for employee review artifact "Review_JavierR.lnk" on sys1-dept from a secondary remote session originating from device YE-HELPDESKTECH at IP address 192.168.0.110. This represents lateral movement from a different compromised system accessing sensitive employee performance data.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 6:46:30.922 AM |
+| FileName | Review_JavierR.lnk |
+| IsInitiatingProcessRemoteSession | true |
+| InitiatingProcessRemoteSessionIP | 192.168.0.110 |
+| InitiatingProcessRemoteSessionDeviceName | YE-HELPDESKTECH |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
+This activity represents **MITRE ATT&CK T1021 (Remote Services)** and **T1570 (Lateral Tool Transfer)**. The remote session from YE-HELPDESKTECH indicates the attacker compromised multiple systems within the environment and is conducting coordinated data collection operations. The internal IP address 192.168.0.110 confirms this is lateral movement within the network, not external access. The device naming convention "HELPDESKTECH" suggests the attacker targeted IT support infrastructure, which typically has elevated privileges and broad network access. Access to employee review files from a different system demonstrates the attacker's awareness of where sensitive HR data resides and their ability to pivot across the environment to collect it. This secondary access occurring shortly before the scheduled task creation suggests the attacker was simultaneously operating from multiple footholds.
 
 ### 🔧 KQL Query Used
-<Add KQL here>
+```kql
+let startTime = todatetime('2025-11-01T06:27:31.1857946Z');
+let endTime = todatetime('2025-12-10T08:29:21.12468Z');
+let firstCompromisedDevice = "sys1-dept";
+DeviceFileEvents
+| where TimeGenerated between (startTime .. endTime)
+| where DeviceName == firstCompromisedDevice
+| where IsInitiatingProcessRemoteSession == true
+| where FileName has_any ("review", "scorecard", "employee", "performance")
+| project TimeGenerated, DeviceName, FileName, InitiatingProcessRemoteSessionIP, InitiatingProcessRemoteSessionDeviceName
+```
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="693" height="188" alt="image" src="https://github.com/user-attachments/assets/ca432535-b3f1-46d6-89b2-4064a58662b6" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Pivot on the device name YE-HELPDESKTECH to identify all systems it has accessed and all accounts used from this device. Query DeviceLogonEvents and IdentityLogonEvents for authentication activity from 192.168.0.110 to map the full scope of lateral movement. Hunt for remote session access to file shares, especially those containing HR, financial, or executive data. Look for other employee review files accessed during this timeframe to determine the breadth of data collection. Correlate this secondary access pattern with the primary attacker activity timeline to understand if this represents a second operator or automated lateral movement tooling.
 
 </details>
 
 ---
 
----
-
 <details>
-<summary id="-flag-1">🚩 <strong>Flag 1: <Technique Name></strong></summary>
+<summary id="-flag-11">🚩 <strong>Flag 11: Bonus Matrix Activity by a New Remote Session Context</strong></summary>
 
 ### 🎯 Objective
-<What the attacker was trying to accomplish>
+Identify another remote session device name that is associated with higher level related activities later in the chain.
 
 ### 📌 Finding
-<High-level description of the activity>
+File access detected for "Q4Candidate_Pack.zip" on sys1-dept from a third remote session originating from device YE-HRPLANNER at IP address 192.168.0.110. This represents continued lateral movement targeting bonus and candidate-related sensitive data from what appears to be a compromised HR planning workstation.
 
 ### 🔍 Evidence
-
 | Field | Value |
 |------|-------|
-| Host | <Placeholder> |
-| Timestamp | <Placeholder> |
-| Process | <Placeholder> |
-| Parent Process | <Placeholder> |
-| Command Line | <Placeholder> |
+| Host | sys1-dept |
+| Timestamp (UTC) | 12/3/2025, 7:26:03.976 AM |
+| FileName | Q4Candidate_Pack.zip |
+| IsInitiatingProcessRemoteSession | true |
+| InitiatingProcessRemoteSessionIP | 192.168.0.110 |
+| InitiatingProcessRemoteSessionDeviceName | YE-HRPLANNER |
 
 ### 💡 Why it matters
-<Explain impact, risk, and relevance>
-
-### 🔧 KQL Query Used
-<Add KQL here>
+This activity represents continued **MITRE ATT&CK T1021 (Remote Services)** and **T1005 (Data from Local System)**. The attacker has now compromised at least three systems: the initial sys1-dept endpoint, YE-HELPDESKTECH, and YE-HRPLANNER. The device naming "HRPLANNER" indicates this is a workstation used by HR personnel for planning activities, likely with access to highly sensitive compensation, hiring, and organizational planning data. The same source IP (192.168.0.110) suggests the attacker is using a central staging or pivot point to access multiple targets. The file "Q4Candidate_Pack.zip" indicates pre-packaged sensitive data, potentially containing candidate information, hiring plans, or compensation packages. This access occurred 40 minutes after the employee review file access, demonstrating systematic progression through HR-related data sources.
 
 ### 🖼️ Screenshot
-<Insert screenshot>
+<img width="915" height="199" alt="image" src="https://github.com/user-attachments/assets/e7df45c7-be4d-4b76-a420-ae7c7588e678" />
+
 
 ### 🛠️ Detection Recommendation
-
-**Hunting Tip:**  
-<Actionable guidance for defenders>
+**Hunting Tip:**
+Investigate the 192.168.0.110 source IP to identify what system is serving as the pivot point for these lateral movement operations. Query all file access events from both YE-HELPDESKTECH and YE-HRPLANNER to determine the full scope of compromised HR infrastructure. Hunt for authentication activity showing how the attacker gained access to these HR systems, particularly focusing on credential dumping or pass-the-hash techniques. Look for data staging and exfiltration attempts involving files accessed from these remote sessions. Correlate the timeline of lateral movement with network connections to identify if data from multiple systems was aggregated before exfiltration.
 
 </details>
 
