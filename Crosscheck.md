@@ -1092,6 +1092,7 @@ DeviceProcessEvents
 Pivot on YE-FINANCEREVIE to identify all systems it has accessed and all accounts used from this device. Query authentication logs for lateral movement from YE-FINANCEREVIE to map the full attack path. Hunt for access to employee scorecards, performance reviews, or personnel files from Finance department systems as these should typically be restricted to HR. Correlate the targeting of specific individuals (like JavierR) across multiple systems to identify if the attacker is building dossiers on high-value targets. Investigate whether the Finance Review workstation has elevated access to compensation, budget, or financial planning data that could be the attacker's ultimate objective. Review network segmentation to determine why Finance workstations have access to HR server infrastructure.
 
 </details>
+
 ---
 
 <details>
